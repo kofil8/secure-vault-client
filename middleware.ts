@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 const protectedRoutes = ["/dashboard"];
 
 export function middleware(request: NextRequest) {
+  
   const path = request.nextUrl.pathname;
 
   const isProtectedRoute = protectedRoutes.some((route) =>
@@ -13,10 +14,9 @@ export function middleware(request: NextRequest) {
 
   if (isProtectedRoute) {
     const token =
-      request.cookies.get("token")?.value || "safaslkdfjasldfksaf";
-      
-    // Or use localStorage if client-side — but cookies are better for SSR
-    if (!token) {
+      request.cookies.get("accessToken")?.value || "safaslkdfjasldfksaf"; 
+      console.log("token", token);
+     if (!token) {
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
     }

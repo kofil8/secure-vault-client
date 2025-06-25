@@ -1,6 +1,4 @@
-"use client";
-
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -8,44 +6,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { loginUser } from '../actions/login-user';
 
-import { useState } from "react";
-import { toast } from "sonner"
-import SmallSpinner from "../(dashboard)/dashboard/_components/spinner";
-
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email || !password) {
-      toast("email and password is required", {
-        duration: 3000
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Simulate network delay
-    setTimeout(() => {
-      localStorage.setItem("token", "tokenafterlogin");
-      setIsLoading(false);
-      toast("You've been logged in.");
-
-      // Redirect after short delay
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 800);
-    }, 3000);
-  };
-
+export default function LoginPage() { 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white text-black px-4">
       <Card className="w-full max-w-md border border-black/10 bg-white shadow-xl">
@@ -57,7 +23,8 @@ export default function LoginPage() {
             Sign in to your account to continue
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+
+        <form action={loginUser}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-black/80">
@@ -65,12 +32,11 @@ export default function LoginPage() {
               </Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="bg-white border-black/10 text-black placeholder:text-black/30"
-                disabled={isLoading}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -79,29 +45,21 @@ export default function LoginPage() {
               </Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 className="bg-white border-black/10 text-black placeholder:text-black/30"
-                disabled={isLoading}
+                required
               />
             </div>
           </CardContent>
+
           <CardFooter className="flex flex-col space-y-4">
             <Button
               type="submit"
-              className="w-full bg-black text-white hover:bg-black/90 mt-3 relative"
-              disabled={isLoading}
+              className="w-full bg-black text-white hover:bg-black/90 mt-3"
             >
-              {isLoading ? (
-                <>
-                  <SmallSpinner />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
+              Sign In
             </Button>
           </CardFooter>
         </form>

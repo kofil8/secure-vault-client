@@ -34,7 +34,7 @@ export default function FileUploadDialog() {
         e.stopPropagation();
         setDragActive(false);
         const droppedFiles = Array.from(e.dataTransfer.files);
-        processFiles(droppedFiles);
+        processFiles(droppedFiles); 
     };
 
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +65,8 @@ export default function FileUploadDialog() {
             fileInputRef.current.click();
         }
     };
+
+    console.log("files", files);
 
     return (
         <Dialog>

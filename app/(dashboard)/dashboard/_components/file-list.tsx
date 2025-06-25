@@ -1,4 +1,6 @@
+
 import { Badge } from "@/components/ui/badge";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FileCard from "./file-card";
 
@@ -66,9 +68,11 @@ const mockFiles = [
 ];
 
 export default function FileList({ viewMode, searchQuery }: FileListProps) {
+
     const filteredFiles = mockFiles.filter((file) =>
         file.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
     return (
         <Tabs defaultValue='all' className='space-y-4'>
             <TabsList>
