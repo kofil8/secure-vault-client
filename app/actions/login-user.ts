@@ -1,6 +1,6 @@
 "use server";
 
-// import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 export async function loginUser(formData: FormData) {
   const email = formData.get("email") as string;
@@ -18,19 +18,29 @@ export async function loginUser(formData: FormData) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
-      // optionally include credentials if needed
-      credentials: "include",
-      cache: "no-store", // prevent Next.js from caching the response
+      credentials: "include", // receives HTTP-only cookie from Express if any
+      cache: "no-store",
     }
   );
 
   if (!res.ok) {
-    // Handle HTTP errors
     const error = await res.json();
     throw new Error(error.message || "Login failed");
   }
 
   const data = await res.json();
 
-  return data;
+  // ✅ Set the accessToken in HTTP-only cookie (accessible in middleware)
+
+  console.log("data", data);
+
+  (await cookies()).set("accessToken", data.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24, // 1 day
+  });
+
+  return { success: true };
 }
