@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 'use client';
 
@@ -88,6 +87,8 @@ export default function FileUploadDialog() {
       }
     });
   };
+
+  
 
   return (
     <Dialog>
@@ -204,7 +205,7 @@ export default function FileUploadDialog() {
               type="button"
               onClick={handleUpload}
               disabled={isPending}
-              className="w-full bg-green-600 text-white mt-4"
+              className="w-full text-white mt-4"
             >
               {isPending ? "Uploading..." : "Upload Now"}
             </Button>

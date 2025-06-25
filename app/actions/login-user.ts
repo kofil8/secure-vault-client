@@ -30,17 +30,16 @@ export async function loginUser(formData: FormData) {
 
   const data = await res.json();
 
+  
+  
   // ✅ Set the accessToken in HTTP-only cookie (accessible in middleware)
-
-  console.log("data", data);
-
-  (await cookies()).set("accessToken", data.accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24, // 1 day
-  });
-
+  
+  (await cookies()).set("accessToken", data?.data?.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
   return { success: true };
 }

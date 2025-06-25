@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 const protectedRoutes = ["/dashboard"];
 
 export function middleware(request: NextRequest) {
-  
   const path = request.nextUrl.pathname;
 
   const isProtectedRoute = protectedRoutes.some((route) =>
@@ -13,10 +12,9 @@ export function middleware(request: NextRequest) {
   );
 
   if (isProtectedRoute) {
-    const token =
-      request.cookies.get("accessToken")?.value || "safaslkdfjasldfksaf"; 
-      console.log("token", token);
-     if (!token) {
+    const token = request.cookies.get("accessToken")?.value;
+    console.log("token", token);
+    if (!token) {
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
@@ -28,3 +26,5 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/dashboard/:path*", "/login"], // Protect all dashboard routes
 };
+
+
