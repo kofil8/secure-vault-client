@@ -3,19 +3,18 @@ import axios from "axios";
 
 const IPINFO_API_TOKEN = process.env.IPINFO_API_TOKEN;
 const ALLOWED_NORDVPN_IP = process.env.ALLOWED_NORDVPN_IP;
-
-// Routes requiring auth check
 const protectedRoutes = ["/dashboard"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // ✅ Get real client IP safely
   const clientIP =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "0.0.0.0";
 
+  console.log("Client IP:", clientIP);
+  console.log("Allowed IP:", ALLOWED_NORDVPN_IP);
+
   try {
-    // ✅ Lookup IP details from ipinfo.io
     const { data } = await axios.get(
       `https://ipinfo.io/${clientIP}?token=${IPINFO_API_TOKEN}`
     );
@@ -26,23 +25,17 @@ export async function middleware(request: NextRequest) {
 
     const isAllowedIP = clientIP === ALLOWED_NORDVPN_IP;
 
-    // ❌ Block if not from your NordVPN IP or flagged as VPN/proxy
     if (!isAllowedIP || isVPN || isProxy || isTor) {
       return new NextResponse("Access denied: Unauthorized IP", {
         status: 403,
       });
     }
   } catch (error) {
-    console.error("IP verification failed:", error);
+    console.error("IP check failed:", error);
     return new NextResponse("Access denied: IP check failed", { status: 403 });
   }
 
-  // 🔐 Check cookie accessToken for protected routes
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    path.startsWith(route)
-  );
-
-  if (isProtectedRoute) {
+  if (protectedRoutes.some((route) => path.startsWith(route))) {
     const token = request.cookies.get("accessToken")?.value;
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));
@@ -53,5 +46,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|favicon.ico|images|fonts|api/public).*)"], // Apply to all except public/static routes
+  matcher: ["/((?!_next|favicon.ico|images|fonts|api/public).*)"],
 };
