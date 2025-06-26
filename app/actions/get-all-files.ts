@@ -28,9 +28,19 @@ export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
     const data = await res.json();
     const rawFiles = data?.data?.result;
 
+    interface RawFile {
+      _id: string;
+      fileName: string;
+      fileType: string;
+      fileSize: number;
+      updatedAt: string;
+      isFavorite?: boolean;
+      fileUrl?: string;
+    }
+
     const mappedFiles = Array.isArray(rawFiles)
       ? rawFiles
-          .map((file: any) => ({
+          .map((file: RawFile) => ({
             id: file._id,
             name: file.fileName,
             type: file.fileType,
@@ -45,7 +55,7 @@ export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
             const timeB = new Date(b.updatedAt).getTime();
             return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
           })
-          .map(({ updatedAt, ...rest }) => rest)
+          .map((file) => file)
       : [];
 
     return mappedFiles;
