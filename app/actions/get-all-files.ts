@@ -11,7 +11,7 @@ export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
   }
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/file`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/files`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-'use client';
+"use client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { Upload, X, FileText, File } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -23,6 +21,19 @@ export default function FileUploadDialog() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ALLOWED_TYPES = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
+
+  const MAX_FILE_SIZE_MB = 10;
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -48,14 +59,28 @@ export default function FileUploadDialog() {
   };
 
   const processFiles = (fileList: File[]) => {
-    const newFiles = [...files, ...fileList];
-    setFiles(newFiles);
+    const validFiles: File[] = [];
+    const previews: string[] = [];
 
-    const newPreviews = fileList.map((file) =>
-      file.type.startsWith("image/") ? URL.createObjectURL(file) : ""
-    );
+    fileList.forEach((file) => {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error(`${file.name} is not an allowed file type.`);
+        return;
+      }
 
-    setPreviews((prev) => [...prev, ...newPreviews]);
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast.error(`${file.name} exceeds the ${MAX_FILE_SIZE_MB}MB limit.`);
+        return;
+      }
+
+      validFiles.push(file);
+      previews.push(
+        file.type.startsWith("image/") ? URL.createObjectURL(file) : ""
+      );
+    });
+
+    setFiles((prev) => [...prev, ...validFiles]);
+    setPreviews((prev) => [...prev, ...previews]);
   };
 
   const removeFile = (index: number) => {
@@ -77,47 +102,57 @@ export default function FileUploadDialog() {
 
     startTransition(async () => {
       try {
-        const res = await uploadFiles(formData);
-        console.log("res", res);
+        await uploadFiles(formData);
         toast.success("Files uploaded successfully!");
         setFiles([]);
         setPreviews([]);
-      } catch (err: any) {
-        toast.error(err.message || "Upload failed");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          toast.error(err.message || "Upload failed");
+        } else {
+          toast.error("Upload failed");
+        }
       }
     });
   };
 
-  
+  const totalSizeMB = (
+    files.reduce((acc, file) => acc + file.size, 0) /
+    (1024 * 1024)
+  ).toFixed(2);
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Upload className="h-4 w-4" />
+        <Button className='gap-2'>
+          <Upload className='h-4 w-4' />
           Upload Files
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <DialogTitle>Upload Files</DialogTitle>
           <DialogDescription>
-            Drag and drop files here or click to browse
+            Drag and drop files here or click to browse. Max {MAX_FILE_SIZE_MB}
+            MB per file.
           </DialogDescription>
         </DialogHeader>
 
         <input
           ref={fileInputRef}
-          id="file-upload"
-          type="file"
+          id='file-upload'
+          type='file'
           multiple
+          accept='.pdf,.docx,.xlsx,.xls,image/*'
           onChange={handleFileInput}
-          className="hidden"
+          className='hidden'
         />
 
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-            dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+            dragActive
+              ? "border-primary bg-primary/5"
+              : "border-muted-foreground/25"
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -125,87 +160,70 @@ export default function FileUploadDialog() {
           onDrop={handleDrop}
           onClick={openFileDialog}
         >
-          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-sm text-muted-foreground mb-2">
+          <Upload className='mx-auto h-12 w-12 text-muted-foreground mb-4' />
+          <p className='text-sm text-muted-foreground mb-2'>
             Drop files here or click to upload
           </p>
-          <Button variant="outline" size="sm" type="button">
+          <Button variant='outline' size='sm' type='button'>
             Browse Files
           </Button>
         </div>
 
         {files.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-sm font-medium mb-2">Uploaded Files:</h4>
-            <ul className="space-y-2 max-h-40 overflow-y-auto">
+          <div className='mt-4'>
+            <h4 className='text-sm font-medium mb-1'>Uploaded Files:</h4>
+            <p className='text-xs text-muted-foreground mb-2'>
+              Total size: {totalSizeMB} MB
+            </p>
+            <ul className='space-y-2 max-h-40 overflow-y-auto'>
               {files.map((file, index) => (
                 <li
                   key={index}
-                  className="flex items-center justify-between gap-2 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded"
+                  className='flex items-center justify-between gap-2 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded'
                 >
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <button className="flex items-center gap-2 truncate flex-1 text-left">
-                        {previews[index] ? (
-                          <Image
-                            src={previews[index]}
-                            alt={file.name}
-                            width={32}
-                            height={32}
-                            className="h-8 w-8 object-cover rounded"
-                          />
+                  <div className='flex items-center gap-2 truncate flex-1 text-left'>
+                    {previews[index] ? (
+                      <Image
+                        src={previews[index]}
+                        alt={file.name}
+                        width={32}
+                        height={32}
+                        className='h-8 w-8 object-cover rounded'
+                      />
+                    ) : (
+                      <span className='h-8 w-8 flex items-center justify-center'>
+                        {file.type.includes("pdf") ||
+                        file.name.endsWith(".pdf") ? (
+                          <FileText className='h-5 w-5' />
                         ) : (
-                          <span className="h-8 w-8 flex items-center justify-center text-muted-foreground">
-                            📄
-                          </span>
+                          <File className='h-5 w-5' />
                         )}
-                        <span className="truncate max-w-[180px]">{file.name}</span>
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl">
-                      <DialogHeader>
-                        <DialogTitle>Preview: {file.name}</DialogTitle>
-                      </DialogHeader>
-                      <div className="mt-4 flex justify-center">
-                        {file.type.startsWith("image/") && previews[index] ? (
-                          <Image
-                            src={previews[index]}
-                            alt={file.name}
-                            width={500}
-                            height={500}
-                            className="max-h-[60vh] w-auto rounded"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-                            <ImageIcon className="h-16 w-16" />
-                            <span>Preview not available for this file type</span>
-                          </div>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      </span>
+                    )}
+                    <span className='truncate max-w-[180px]'>{file.name}</span>
+                  </div>
 
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    variant='ghost'
+                    size='icon'
+                    className='h-6 w-6 p-0 text-muted-foreground hover:text-destructive'
                     onClick={(e) => {
                       e.stopPropagation();
                       removeFile(index);
                     }}
                     aria-label={`Remove ${file.name}`}
                   >
-                    <X className="h-4 w-4" />
+                    <X className='h-4 w-4' />
                   </Button>
                 </li>
               ))}
             </ul>
 
             <Button
-              type="button"
+              type='button'
               onClick={handleUpload}
               disabled={isPending}
-              className="w-full text-white mt-4"
+              className='w-full text-white mt-4'
             >
               {isPending ? "Uploading..." : "Upload Now"}
             </Button>
