@@ -34,7 +34,6 @@ export default function FileList({
     all: files,
     documents: files.filter((file) => file.type === "document"),
     images: files.filter((file) => file.type === "image"),
-    videos: files.filter((file) => file.type === "video"),
     archives: files.filter((file) => file.type === "archive"),
   };
 
