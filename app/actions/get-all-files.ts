@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 
-export async function getAllFiles() {
+export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
   const token = (await cookies()).get("accessToken")?.value;
 
   if (!token) {
@@ -26,7 +26,29 @@ export async function getAllFiles() {
     }
 
     const data = await res.json();
-    return Array.isArray(data?.data) ? data.data : [];
+    const rawFiles = data?.data?.result;
+
+    const mappedFiles = Array.isArray(rawFiles)
+      ? rawFiles
+          .map((file: any) => ({
+            id: file._id,
+            name: file.fileName,
+            type: file.fileType,
+            size: formatFileSize(file.fileSize),
+            modified: formatModifiedTime(file.updatedAt),
+            updatedAt: file.updatedAt,
+            starred: file.isFavorite || false,
+            thumbnail: file.fileUrl,
+          }))
+          .sort((a, b) => {
+            const timeA = new Date(a.updatedAt).getTime();
+            const timeB = new Date(b.updatedAt).getTime();
+            return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+          })
+          .map(({ updatedAt, ...rest }) => rest)
+      : [];
+
+    return mappedFiles;
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error("getAllFiles() error:", error.message);
@@ -35,4 +57,24 @@ export async function getAllFiles() {
     }
     return [];
   }
+}
+
+function formatFileSize(bytes: number) {
+  const kb = bytes / 1024;
+  const mb = kb / 1024;
+  if (mb >= 1) return `${mb.toFixed(2)} MB`;
+  return `${kb.toFixed(1)} KB`;
+}
+
+function formatModifiedTime(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = (now.getTime() - date.getTime()) / 1000;
+
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
+
+  return date.toLocaleDateString();
 }

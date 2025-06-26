@@ -9,13 +9,13 @@ import { getAllFiles } from "@/app/actions/get-all-files";
 import Spinner from "./_components/ui/spinner";
 
 type File = {
-  id: number;
+  id: string;
   name: string;
   type: string;
   size: string;
   modified: string;
   starred: boolean;
-  thumbnail: string;
+  thumbnail?: string;
 };
 
 export default function FileVaultDashboard() {
@@ -26,9 +26,14 @@ export default function FileVaultDashboard() {
 
   useEffect(() => {
     const fetchFiles = async () => {
-      const allFiles = await getAllFiles();
-      setFiles(allFiles);
-      setIsLoading(false);
+      try {
+        const allFiles = await getAllFiles("desc"); // newest first
+        setFiles(allFiles);
+      } catch (err) {
+        console.error("Failed to fetch files", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchFiles();
@@ -42,6 +47,7 @@ export default function FileVaultDashboard() {
         viewMode={viewMode}
         setViewMode={setViewMode}
       />
+
       <div className='flex-1 space-y-4 p-4 md:p-6'>
         {/* Stats Cards */}
         <div className='grid gap-3 md:grid-cols-2 lg:grid-cols-3'>
@@ -54,6 +60,7 @@ export default function FileVaultDashboard() {
               <div className='text-2xl font-bold'>{files.length}</div>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>
@@ -62,9 +69,11 @@ export default function FileVaultDashboard() {
               <Archive className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
+              {/* Optional: Calculate actual size from files */}
               <div className='text-2xl font-bold'>2.1 GB</div>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>
@@ -79,7 +88,9 @@ export default function FileVaultDashboard() {
         </div>
 
         {isLoading ? (
-          <Spinner />
+          <div className='flex justify-center py-20'>
+            <Spinner />
+          </div>
         ) : (
           <FileList
             viewMode={viewMode}
