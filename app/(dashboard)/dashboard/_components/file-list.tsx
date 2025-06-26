@@ -9,7 +9,7 @@ type File = {
   name: string;
   type: string;
   size: string;
-  modified: string;
+  modified: string; // ISO date string
   starred: boolean;
   thumbnail?: string;
 };
@@ -20,30 +20,32 @@ type FileListProps = {
 };
 
 export default function FileList({ viewMode, files }: FileListProps) {
+  // Sort by most recent first
+  const sortByDateDesc = (arr: File[]) =>
+    [...arr].sort(
+      (a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime()
+    );
+
   const fileTabs: Record<string, File[]> = {
-    all: files,
-    documents: files.filter((file) => file.type === "document"),
-    images: files.filter((file) => file.type === "image"),
-    videos: files.filter((file) => file.type === "video"),
-    archives: files.filter((file) => file.type === "archive"),
+    all: sortByDateDesc(files),
+    documents: sortByDateDesc(files.filter((file) => file.type === "document")),
+    images: sortByDateDesc(files.filter((file) => file.type === "image")),
+    videos: sortByDateDesc(files.filter((file) => file.type === "video")),
+    archives: sortByDateDesc(files.filter((file) => file.type === "archive")),
   };
 
   const renderFiles = (list: File[]) =>
     viewMode === "grid" ? (
       <div className='grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'>
-        {list.map((file) =>
-          file && file.name ? (
-            <FileCard key={file.id} file={file} viewMode={viewMode} />
-          ) : null
-        )}
+        {list.map((file) => (
+          <FileCard key={file.id} file={file} viewMode={viewMode} />
+        ))}
       </div>
     ) : (
       <div className='space-y-2'>
-        {list.map((file) =>
-          file && file.name ? (
-            <FileCard key={file.id} file={file} viewMode={viewMode} />
-          ) : null
-        )}
+        {list.map((file) => (
+          <FileCard key={file.id} file={file} viewMode={viewMode} />
+        ))}
       </div>
     );
 

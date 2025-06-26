@@ -69,7 +69,6 @@ export default function FileVaultDashboard() {
               <Archive className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
-              {/* Optional: Calculate actual size from files */}
               <div className='text-2xl font-bold'>2.1 GB</div>
             </CardContent>
           </Card>
@@ -94,8 +93,7 @@ export default function FileVaultDashboard() {
         ) : (
           <FileList
             viewMode={viewMode}
-            searchQuery={searchQuery}
-            files={files}
+            files={files} // ✅ removed searchQuery
           />
         )}
       </div>
