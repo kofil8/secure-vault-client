@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { cookies } from "next/headers";
@@ -7,7 +6,8 @@ export async function getAllFiles() {
   const token = (await cookies()).get("accessToken")?.value;
 
   if (!token) {
-    throw new Error("Unauthorized: No access token found");
+    console.error("Unauthorized: No access token found");
+    return [];
   }
 
   try {
@@ -17,7 +17,7 @@ export async function getAllFiles() {
         Authorization: `Bearer ${token}`,
       },
       credentials: "include",
-      cache: "no-store", // always fetch fresh data
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -26,8 +26,13 @@ export async function getAllFiles() {
     }
 
     const data = await res.json();
-    return data?.data; // You can shape this based on API structure
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to load files");
+    return Array.isArray(data?.data) ? data.data : [];
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("getAllFiles() error:", error.message);
+    } else {
+      console.error("getAllFiles() unknown error:", error);
+    }
+    return [];
   }
 }
