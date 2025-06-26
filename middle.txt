@@ -57,3 +57,55 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next|favicon.ico|images|fonts|api/public).*)"],
 };
+
+
+import { NextRequest, NextResponse } from "next/server";
+import axios from "axios";
+
+const IPINFO_API_TOKEN = process.env.IPINFO_API_TOKEN;
+const ALLOWED_NORDVPN_IP = process.env.ALLOWED_NORDVPN_IP;
+const protectedRoutes = ["/dashboard"];
+
+export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  const clientIP =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "0.0.0.0";
+
+  console.log("Client IP:", clientIP);
+  console.log("Allowed IP:", ALLOWED_NORDVPN_IP);
+
+  try {
+    const { data } = await axios.get(
+      `https://ipinfo.io/${clientIP}?token=${IPINFO_API_TOKEN}`
+    );
+
+    const isVPN = data.privacy?.vpn === true;
+    const isProxy = data.privacy?.proxy === true;
+    const isTor = data.privacy?.tor === true;
+
+    const isAllowedIP = clientIP === ALLOWED_NORDVPN_IP;
+
+    if (!isAllowedIP || isVPN || isProxy || isTor) {
+      return new NextResponse("Access denied: Unauthorized IP", {
+        status: 403,
+      });
+    }
+  } catch (error) {
+    console.error("IP check failed:", error);
+    return new NextResponse("Access denied: IP check failed", { status: 403 });
+  }
+
+  if (protectedRoutes.some((route) => path.startsWith(route))) {
+    const token = request.cookies.get("accessToken")?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!_next|favicon.ico|images|fonts|api/public).*)"],
+};
