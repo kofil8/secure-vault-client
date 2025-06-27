@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Star, Trash } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -36,17 +36,21 @@ export default function FileCard({ file, viewMode, onDelete }: FileProps) {
 
   return (
     <Card
-      className={cn(viewMode === "list" && "flex items-center justify-between")}
+      className={cn(
+        "group transition-shadow hover:shadow-md hover:border-primary border border-border rounded-2xl overflow-hidden",
+        viewMode === "list" && "flex items-center justify-between"
+      )}
     >
       <CardContent
         className={cn(
           "p-4",
-          viewMode === "grid" && "flex flex-col items-center space-y-2",
-          viewMode === "list" && "w-full flex justify-between items-center"
+          viewMode === "grid"
+            ? "flex flex-col items-center space-y-3 text-center"
+            : "w-full flex justify-between items-center"
         )}
       >
-        {/* Thumbnail */}
-        <div className='flex items-center space-x-4'>
+        {/* Thumbnail + File Info */}
+        <div className='flex items-center gap-4 w-full'>
           {thumbnail ? (
             <Image
               src={thumbnail}
@@ -56,30 +60,49 @@ export default function FileCard({ file, viewMode, onDelete }: FileProps) {
               className='rounded-md object-cover'
             />
           ) : (
-            <div className='w-12 h-12 bg-muted rounded-md' />
+            <div className='w-12 h-12 bg-gray-200 rounded-md' />
           )}
-          <div>
-            <div className='font-semibold'>{name}</div>
-            <div className='text-sm text-muted-foreground capitalize'>
-              {type}
+
+          <div className='flex flex-col'>
+            <div className='font-medium text-sm truncate max-w-[200px]'>
+              {name}
             </div>
+            <div className='text-xs text-muted-foreground capitalize'>
+              {type} • {(size / 1024).toFixed(1)} KB
+            </div>
+            <div className='text-xs text-muted-foreground'>
+              Modified: {new Date(modified).toLocaleDateString()}
+            </div>
+
+            {/* Editor Button */}
+            {["docx", "xlsx", "pdf"].includes(type.toLowerCase()) && (
+              <button
+                onClick={() => window.open(`/editor/${id}`, "_blank")}
+                className='text-xs text-blue-600 hover:underline mt-1 self-start'
+              >
+                Open with Editor
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Metadata */}
+        {/* Action Buttons */}
         {viewMode === "list" && (
-          <div className='flex items-center space-x-4'>
-            <div className='text-sm'>{(size / 1024).toFixed(1)} KB</div>
-            <div className='text-sm'>
-              {new Date(modified).toLocaleDateString()}
-            </div>
-            {starred && <Star className='w-4 h-4 text-yellow-500' />}
+          <div className='flex items-center gap-4 ml-auto'>
+            {starred && (
+              <span title='Starred'>
+                <Star
+                  className='w-4 h-4 text-yellow-500'
+                  aria-label='Starred'
+                />
+              </span>
+            )}
             {onDelete && (
               <button
                 onClick={handleDelete}
-                className='text-sm text-red-500 hover:text-red-700 flex items-center gap-1'
+                className='text-xs text-red-500 hover:underline flex items-center gap-1'
               >
-                <Trash className='w-4 h-4' />{" "}
+                <Trash className='w-4 h-4' />
                 {confirmingDelete ? "Confirm" : "Delete"}
               </button>
             )}

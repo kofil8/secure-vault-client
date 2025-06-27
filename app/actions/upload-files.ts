@@ -50,6 +50,6 @@ export async function uploadFiles(formData: FormData) {
   }
 
   const result = await res.json();
-  revalidatePath("/"); // Refresh dashboard
+  revalidatePath("/");
   return result?.data;
 }

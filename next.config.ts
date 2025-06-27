@@ -7,7 +7,13 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    domains: ["localhost"],
+    remotePatterns: [
+      {
+        protocol: "http", // Changed from "https" to "http"
+        hostname: "localhost",
+        port: "7001", // Added port to match your image src
+      },
+    ],
   },
 };
 

@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { loginUser } from "../actions/login-user";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,10 +21,8 @@ import SmallSpinner from "../(dashboard)/dashboard/_components/spinner";
 export default function LoginForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
 
   const handleAction = (formData: FormData) => {
-    setError("");
     startTransition(async () => {
       try {
         const res = await loginUser(formData);
@@ -36,8 +32,12 @@ export default function LoginForm() {
             router.push("/dashboard");
           }, 1000);
         }
-      } catch (err: any) {
-        toast.error(err.message || "Login failed");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          toast.error(err.message || "Login failed");
+        } else {
+          toast.error("Login failed");
+        }
       }
     });
   };
@@ -67,6 +67,8 @@ export default function LoginForm() {
               className='bg-white border-black/10 text-black placeholder:text-black/30'
               required
               disabled={isPending}
+              autoComplete='email'
+              suppressHydrationWarning
             />
           </div>
           <div className='space-y-2'>
@@ -81,6 +83,8 @@ export default function LoginForm() {
               className='bg-white border-black/10 text-black placeholder:text-black/30'
               required
               disabled={isPending}
+              autoComplete='current-password'
+              suppressHydrationWarning
             />
             <div className='text-right'>
               <Link
