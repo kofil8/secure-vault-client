@@ -1,8 +1,8 @@
 "use client";
 
 import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/esm/Page/AnnotationLayer.css";
-import "react-pdf/dist/esm/Page/TextLayer.css";
+import "@/styles/react-pdf/AnnotationLayer.css";
+import "@/styles/react-pdf/TextLayer.css";
 
 import { X } from "lucide-react";
 import { useState } from "react";
