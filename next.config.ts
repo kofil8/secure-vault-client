@@ -9,10 +9,6 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["localhost"],
   },
-  pdf: {
-    enabled: true,
-    output: "export",
-  },
 };
 
 export default nextConfig;

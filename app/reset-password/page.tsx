@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { resetPassword } from "../actions/forgot-password";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { LoadingButton } from "@/components/ui/LoadingButton";
@@ -13,10 +13,15 @@ const passwordSchema = z
   .min(6, "Password must be at least 6 characters");
 
 export default function ResetPasswordPage() {
-  const token = useSearchParams().get("token") || "";
   const router = useRouter();
+  const [token, setToken] = useState<string>("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setToken(urlParams.get("token") || "");
+  }, []);
 
   const handleReset = async () => {
     const validation = passwordSchema.safeParse(newPassword);
