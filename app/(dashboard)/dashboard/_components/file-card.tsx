@@ -1,25 +1,19 @@
-"use client";
-
+import { useState } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Star,
-  MoreVertical,
-  FileText,
-  FileType2,
-  FileSpreadsheet,
-  Image as ImageIcon,
-} from "lucide-react";
-import Image from "next/image";
-import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+import { MoreVertical, Star } from "lucide-react";
+import Image from "next/image";
+import FileIcon from "@/components/ui/FileIcon";
+import { deleteFile } from "@/app/actions/delete-file";
 
+// Define the FileCard props
 type FileProps = {
   file: {
     id: string;
@@ -46,36 +40,53 @@ export default function FileCard({
   onDeleteError,
 }: FileProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleDelete = async () => {
-    if (!file.id) {
-      onDeleteError(new Error("Invalid file ID"));
-      return;
-    }
+  // State to store the iframe source (OnlyOffice URL)
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
 
+  // Function to handle editing the file in OnlyOffice
+  const handleEditInOnlyOffice = async (fileId: string) => {
     try {
-      setIsDeleting(true);
-      const response = await fetch(`/api/files/${file.id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      // Call the backend to get the editor config for OnlyOffice
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/onlyoffice/config/${fileId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.json();
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete file");
+      if (data.success) {
+        const { document } = data.data.editorConfig;
+        // Set the iframe source to the document URL from OnlyOffice
+        setIframeSrc(document.url);
+      } else {
+        toast.error("Failed to load editor config.");
       }
+    } catch {
+      toast.error("Error opening the file in OnlyOffice.");
+    }
+  };
 
-      onDeleteSuccess(file.id);
-      toast.success("File deleted successfully");
+  // Function to handle file deletion
+  const handleDelete = async (fileId: string) => {
+    try {
+      const result = await deleteFile(fileId);
+
+      if (result.success) {
+        onDeleteSuccess(fileId);
+        toast.success(result.message);
+      } else {
+        onDeleteError(result.message);
+        toast.error(result.message);
+      }
     } catch (error) {
       onDeleteError(error);
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteConfirm(false);
+      toast.error("An error occurred while deleting the file.");
     }
   };
 
@@ -147,18 +158,6 @@ export default function FileCard({
               {file.size} • {file.modified}
             </p>
           </div>
-
-          {/* List View Metadata */}
-          {viewMode === "list" && (
-            <div className='hidden md:flex items-center gap-4 ml-4'>
-              <span className='text-sm text-muted-foreground min-w-[4rem]'>
-                {file.size}
-              </span>
-              <span className='text-sm text-muted-foreground min-w-[6rem]'>
-                {file.modified}
-              </span>
-            </div>
-          )}
         </CardContent>
 
         {/* Actions */}
@@ -189,22 +188,25 @@ export default function FileCard({
                   align='end'
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* Add the Edit in OnlyOffice option */}
+                  <DropdownMenuItem
+                    onClick={() => handleEditInOnlyOffice(file.id)}
+                  >
+                    Edit in OnlyOffice
+                  </DropdownMenuItem>
                   <DropdownMenuItem>Download</DropdownMenuItem>
-                  <DropdownMenuItem>Share</DropdownMenuItem>
                   {showDeleteConfirm ? (
                     <DropdownMenuItem
                       className='text-destructive focus:bg-destructive/10'
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete();
+                        handleDelete(file.id); // Call delete function
                       }}
-                      disabled={isDeleting}
                     >
-                      {isDeleting ? "Deleting..." : "Confirm Delete"}
+                      Confirm Delete
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem
-                      className='text-destructive focus:bg-destructive/10'
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowDeleteConfirm(true);
@@ -219,17 +221,19 @@ export default function FileCard({
           )}
         </div>
       </Card>
+
+      {/* Conditionally Render Iframe */}
+      {iframeSrc && (
+        <div className='w-full mt-4'>
+          <iframe
+            src={iframeSrc}
+            width='100%'
+            height='600'
+            style={{ border: "none" }}
+            title='OnlyOffice Editor'
+          ></iframe>
+        </div>
+      )}
     </div>
   );
-}
-
-function FileIcon({ type, className }: { type: string; className?: string }) {
-  const lowerType = type.toLowerCase();
-  if (lowerType.includes("image")) return <ImageIcon className={className} />;
-  if (lowerType.includes("pdf")) return <FileText className={className} />;
-  if (lowerType.includes("word") || lowerType.includes("document"))
-    return <FileType2 className={className} />;
-  if (lowerType.includes("spreadsheet") || lowerType.includes("excel"))
-    return <FileSpreadsheet className={className} />;
-  return <FileText className={className} />;
 }

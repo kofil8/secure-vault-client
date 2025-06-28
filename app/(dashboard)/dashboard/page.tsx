@@ -21,7 +21,7 @@ export default function FileVaultDashboard() {
     const fetchFiles = async () => {
       try {
         setIsLoading(true);
-        const allFiles = await getAllFiles("desc");
+        const allFiles = await getAllFiles("desc"); // Ensure this function fetches your files
         setFiles(allFiles);
       } catch (err) {
         console.error("Failed to fetch files", err);
@@ -34,6 +34,7 @@ export default function FileVaultDashboard() {
     fetchFiles();
   }, []);
 
+  // Handle successful file deletion
   const handleFileDeleted = (deletedFileId: string) => {
     setFiles((prevFiles) =>
       prevFiles.filter((file) => file.id !== deletedFileId)
@@ -112,7 +113,7 @@ export default function FileVaultDashboard() {
             viewMode={viewMode}
             files={files}
             searchQuery={searchQuery}
-            onFileDeleted={handleFileDeleted}
+            onFileDeleted={handleFileDeleted} // Pass down the file delete handler
           />
         )}
       </div>

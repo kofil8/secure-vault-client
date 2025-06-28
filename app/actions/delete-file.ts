@@ -23,9 +23,9 @@ export async function deleteFile(fileId: string) {
 
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${encodeURIComponent(
-        fileId
-      )}`,
+      `${
+        process.env.NEXT_PUBLIC_API_BASE_URL
+      }/files/permanent/${encodeURIComponent(fileId)}`,
       {
         method: "DELETE",
         headers: {
