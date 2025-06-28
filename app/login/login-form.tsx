@@ -55,6 +55,7 @@ export default function LoginForm() {
 
       <form action={handleAction}>
         <CardContent className='space-y-4'>
+          {/* Email */}
           <div className='space-y-2'>
             <Label htmlFor='email' className='text-black/80'>
               Email
@@ -69,6 +70,8 @@ export default function LoginForm() {
               disabled={isPending}
             />
           </div>
+
+          {/* Password */}
           <div className='space-y-2'>
             <Label htmlFor='password' className='text-black/80'>
               Password

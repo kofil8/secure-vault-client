@@ -1,24 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
+"use client";
 
-import { useEffect, useState, useTransition } from 'react';
-import { logoutUser } from '@/app/actions/logout-user';
-import { getProfile } from '@/app/actions/get-profile';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useEffect, useState, useTransition } from "react";
+import { logoutUser } from "@/app/actions/logout-user";
+import { getProfile } from "@/app/actions/get-profile";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Settings, User } from 'lucide-react';
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+} from "@/components/ui/dropdown-menu";
+import { Settings, User } from "lucide-react";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function SidebarUserMenu() {
-  const [user, setUser] = useState<{ email: string; name: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; name: string } | null>(
+    null
+  );
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -49,42 +55,42 @@ export default function SidebarUserMenu() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              size='lg'
+              className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src="/placeholder.svg" alt="User" />
-                <AvatarFallback className="rounded-lg">
-                  {user?.name?.[0] || 'U'}
+              <Avatar className='h-8 w-8 rounded-lg'>
+                <AvatarImage src='/placeholder.svg' alt='User' />
+                <AvatarFallback className='rounded-lg'>
+                  {user?.name?.[0] || "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">
-                  {user?.name || 'Loading...'}
+              <div className='grid flex-1 text-left text-sm leading-tight'>
+                <span className='truncate font-semibold'>
+                  {user?.name || "Loading..."}
                 </span>
-                <span className="truncate text-xs">{user?.email || ''}</span>
+                <span className='truncate text-xs'>{user?.email || ""}</span>
               </div>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side="bottom"
-            align="end"
+            className='w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg'
+            side='bottom'
+            align='end'
             sideOffset={4}
           >
             <DropdownMenuItem asChild>
-              <a href="/profile">
-                <User className="mr-2 h-4 w-4" /> Profile
+              <a href='/profile'>
+                <User className='mr-2 h-4 w-4' /> Profile
               </a>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <a href="/reset-password">
-                <Settings className="mr-2 h-4 w-4" /> Reset Password
+              <a href='/change-password'>
+                <Settings className='mr-2 h-4 w-4' /> Change Password
               </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
-              {isPending ? 'Logging out...' : 'Log out'}
+              {isPending ? "Logging out..." : "Log out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

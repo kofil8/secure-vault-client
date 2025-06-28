@@ -8,6 +8,15 @@ const protectedRoutes = ["/dashboard"];
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  const hostname = request.headers.get("host") || "";
+  const isLocalhost =
+    hostname.startsWith("localhost") || hostname.startsWith("127.0.0.1");
+
+  // ✅ Skip VPN check during local development
+  if (isLocalhost) {
+    return NextResponse.next();
+  }
+
   const clientIP =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "0.0.0.0";
 

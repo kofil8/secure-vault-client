@@ -1,31 +1,59 @@
 "use server";
 
-export async function deleteFile(
-  fileId: string
-): Promise<{ success: boolean; message: string }> {
+import { cookies } from "next/headers";
+
+export async function deleteFile(fileId: string) {
+  // Validate fileId
+  if (!fileId || typeof fileId !== "string" || !/^[a-f\d]{24}$/i.test(fileId)) {
+    return {
+      success: false,
+      message: "Invalid file ID format",
+    };
+  }
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
+
+  if (!token) {
+    return {
+      success: false,
+      message: "Unauthorized: No access token",
+    };
+  }
+
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${fileId}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${encodeURIComponent(
+        fileId
+      )}`,
       {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        cache: "no-store",
       }
     );
 
+    const result = await res.json();
+
     if (!res.ok) {
-      throw new Error(`Failed to delete file: ${res.statusText}`);
+      return {
+        success: false,
+        message: result.message || "Failed to delete file",
+      };
     }
 
-    const result = await res.json();
     return {
       success: true,
       message: result.message || "File deleted successfully",
+      data: result.data,
     };
   } catch (error) {
     console.error("Error deleting file:", error);
-    return { success: false, message: (error as Error).message };
+    return {
+      success: false,
+      message: (error as Error).message || "Failed to delete file",
+    };
   }
 }

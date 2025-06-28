@@ -14,6 +14,7 @@ import Image from "next/image";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { uploadFiles } from "@/app/actions/upload-files";
+import { useRouter } from "next/navigation"; // ✅ Added
 
 export default function FileUploadDialog() {
   const [dragActive, setDragActive] = useState(false);
@@ -21,6 +22,7 @@ export default function FileUploadDialog() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter(); // ✅ Added
 
   const ALLOWED_TYPES = [
     "application/pdf",
@@ -106,6 +108,7 @@ export default function FileUploadDialog() {
         toast.success("Files uploaded successfully!");
         setFiles([]);
         setPreviews([]);
+        router.refresh(); // ✅ Refresh dashboard content after upload
       } catch (err: unknown) {
         if (err instanceof Error) {
           toast.error(err.message || "Upload failed");

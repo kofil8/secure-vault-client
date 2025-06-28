@@ -17,18 +17,22 @@ const ALLOWED_TYPES = [
 const MAX_FILE_SIZE_MB = 10;
 
 export async function uploadFiles(formData: FormData) {
-  const files = formData.getAll("files") as File[];
+  // Filter out invalid files
+  const files = (formData.getAll("files") as File[]).filter(
+    (file) =>
+      ALLOWED_TYPES.includes(file.type) &&
+      file.size <= MAX_FILE_SIZE_MB * 1024 * 1024
+  );
+
+  if (files.length === 0) {
+    throw new Error("No valid files to upload.");
+  }
 
   const uploadForm = new FormData();
+  files.forEach((file) => uploadForm.append("files", file));
 
-  files.forEach((file) => {
-    if (!ALLOWED_TYPES.includes(file.type)) return;
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return;
-
-    uploadForm.append("files", file);
-  });
-
-  const token = (await cookies()).get("accessToken")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
     throw new Error("Unauthorized: No access token found.");
@@ -36,20 +40,23 @@ export async function uploadFiles(formData: FormData) {
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/files`, {
     method: "POST",
-    body: uploadForm,
-    credentials: "include",
-    cache: "no-store",
     headers: {
-      authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
+    body: uploadForm,
+    cache: "no-store",
+    credentials: "include",
   });
 
   if (!res.ok) {
-    const error = await res.json();
+    const error = await res.json().catch(() => ({}));
     throw new Error(error.message || "Upload failed");
   }
 
   const result = await res.json();
-  revalidatePath("/"); // Refresh dashboard
+
+  // ✅ Revalidate dashboard to show updated file list
+  revalidatePath("/dashboard");
+
   return result?.data;
 }
