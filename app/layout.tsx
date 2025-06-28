@@ -1,5 +1,16 @@
+import { Roboto, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
 
 export const metadata = {
   title: "secure vault",
@@ -13,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className='antialiased'>
+      <body className={`${roboto.variable} ${inter.variable} antialiased`}>
         {children}
         <Toaster />
       </body>
