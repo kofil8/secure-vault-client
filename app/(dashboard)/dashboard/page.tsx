@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Marking this file as a client component to use hooks like `useState`
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import Spinner from "./_components/ui/spinner";
 import { getAllFiles } from "@/app/actions/get-all-files";
 import { toast } from "sonner";
 import { DashboardFile } from "./file-list-types";
+import { Plus } from "lucide-react"; // Import the Plus icon for the floating button
+import { createFile } from "@/app/actions/create-file"; // Import the createFile action
 
 export default function FileVaultDashboard() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -16,12 +18,14 @@ export default function FileVaultDashboard() {
   const [files, setFiles] = useState<DashboardFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [storageQuota] = useState(15 * 1024); // 15GB in MB
+  const [showModal, setShowModal] = useState(false); // State to show/hide the modal
+  const [isCreating, setIsCreating] = useState(false); // State to manage loading during file creation
 
   useEffect(() => {
     const fetchFiles = async () => {
       try {
         setIsLoading(true);
-        const allFiles = await getAllFiles("desc"); // Ensure this function fetches your files
+        const allFiles = await getAllFiles("desc");
         setFiles(allFiles);
       } catch (err) {
         console.error("Failed to fetch files", err);
@@ -32,9 +36,8 @@ export default function FileVaultDashboard() {
     };
 
     fetchFiles();
-  }, []);
+  }, []); // Run only once after the initial render
 
-  // Handle successful file deletion
   const handleFileDeleted = (deletedFileId: string) => {
     setFiles((prevFiles) =>
       prevFiles.filter((file) => file.id !== deletedFileId)
@@ -42,7 +45,6 @@ export default function FileVaultDashboard() {
     toast.success("File deleted successfully");
   };
 
-  // Calculate storage usage
   const totalStorageMB = files.reduce((total, file) => {
     const sizeValue = parseFloat(file.size.split(" ")[0]);
     const unit = file.size.includes("MB") ? 1 : 0.001; // Convert KB to MB if needed
@@ -53,6 +55,31 @@ export default function FileVaultDashboard() {
     100,
     (totalStorageMB / storageQuota) * 100
   );
+
+  // Handle file creation using the action
+  const handleCreateFile = async (type: "docx" | "xlsx" | "pdf") => {
+    setIsCreating(true);
+
+    // Call the createFile action
+    const result = await createFile(type);
+
+    if (result.success) {
+      const fileUrl = result.fileUrl;
+
+      // Create a link to download the file
+      const a = document.createElement("a");
+      a.href = fileUrl;
+      a.download = fileUrl.split("/").pop(); // Extracts filename from URL
+      a.click();
+
+      toast.success("File created successfully!");
+    } else {
+      toast.error(result.message); // Display error message from action result
+    }
+
+    setIsCreating(false);
+    setShowModal(false); // Close the modal after file creation
+  };
 
   return (
     <div className='flex flex-col h-full'>
@@ -117,6 +144,48 @@ export default function FileVaultDashboard() {
           />
         )}
       </div>
+
+      {/* Floating "+" Button */}
+      <div className='fixed bottom-10 right-10'>
+        <button
+          onClick={() => setShowModal(true)}
+          className='bg-primary p-4 rounded-full text-white shadow-lg'
+        >
+          <Plus className='h-6 w-6' />
+        </button>
+      </div>
+
+      {/* Modal to Select File Type */}
+      {showModal && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center'>
+          <div className='bg-white p-6 rounded-lg shadow-lg'>
+            <h2 className='text-xl font-semibold mb-4'>Select File Type</h2>
+            <div className='flex space-x-4'>
+              <button
+                onClick={() => handleCreateFile("docx")}
+                className='bg-blue-500 text-white p-2 rounded'
+                disabled={isCreating}
+              >
+                DOCX
+              </button>
+              <button
+                onClick={() => handleCreateFile("xlsx")}
+                className='bg-green-500 text-white p-2 rounded'
+                disabled={isCreating}
+              >
+                Excel
+              </button>
+              <button
+                onClick={() => handleCreateFile("pdf")}
+                className='bg-red-500 text-white p-2 rounded'
+                disabled={isCreating}
+              >
+                PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

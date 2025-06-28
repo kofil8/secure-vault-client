@@ -1,7 +1,8 @@
+// file-list.tsx
 "use client";
 
 import FileCard from "./file-card";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { DashboardFile } from "../file-list-types";
 
@@ -15,21 +16,26 @@ type FileListProps = {
 export default function FileList({
   viewMode,
   files,
-  searchQuery,
+  searchQuery = "", // Default value for searchQuery
   onFileDeleted,
 }: FileListProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
-  const filteredFiles = files.filter((file) =>
-    file.name.toLowerCase().includes(searchQuery?.toLowerCase() || "")
-  );
+  // Memoize filtered files to prevent unnecessary recalculations
+  const filteredFiles = useMemo(() => {
+    return files.filter((file) =>
+      file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [files, searchQuery]);
 
+  // Handle errors during deletion
   const handleDeleteError = (error: unknown) => {
     toast.error(
       error instanceof Error ? error.message : "Failed to delete file"
     );
   };
 
+  // Toggle file selection
   const toggleFileSelection = (fileId: string) => {
     setSelectedFiles((prev) =>
       prev.includes(fileId)
@@ -44,7 +50,7 @@ export default function FileList({
         <div className='grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
           {filteredFiles.map((file) => (
             <FileCard
-              key={file.id}
+              key={file.id} // Unique key prop
               file={file}
               viewMode={viewMode}
               isSelected={selectedFiles.includes(file.id)}
@@ -67,7 +73,7 @@ export default function FileList({
           {/* List View Files */}
           {filteredFiles.map((file) => (
             <FileCard
-              key={file.id}
+              key={file.id} // Unique key prop
               file={file}
               viewMode={viewMode}
               isSelected={selectedFiles.includes(file.id)}
