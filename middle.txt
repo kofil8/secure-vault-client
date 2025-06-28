@@ -109,3 +109,43 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next|favicon.ico|images|fonts|api/public).*)"],
 };
+
+
+
+  const handleEditInOnlyOffice = async (fileId: string) => {
+    try {
+      // Call the backend to get the editor config for OnlyOffice
+      const response = await fetch(`/api/onlyoffice/config/${fileId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        const { callbackUrl, document } = data.data.editorConfig;
+
+        // Open the OnlyOffice editor in a new window or iframe
+        const editorWindow = window.open(
+          callbackUrl,
+          "_blank",
+          "width=800, height=600"
+        );
+        editorWindow?.document.write(`
+          <html>
+            <head>
+              <title>OnlyOffice Editor</title>
+            </head>
+            <body>
+              <iframe src="${document.url}" width="100%" height="100%" style="border: none;"></iframe>
+            </body>
+          </html>
+        `);
+      } else {
+        toast.error("Failed to load editor config.");
+      }
+    } catch {
+      toast.error("Error opening the file in OnlyOffice.");
+    }
+  };
