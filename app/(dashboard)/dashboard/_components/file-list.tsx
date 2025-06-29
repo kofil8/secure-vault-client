@@ -1,4 +1,3 @@
-// file-list.tsx
 "use client";
 
 import FileCard from "./file-card";
@@ -16,7 +15,7 @@ type FileListProps = {
 export default function FileList({
   viewMode,
   files,
-  searchQuery = "", // Default value for searchQuery
+  searchQuery = "",
   onFileDeleted,
 }: FileListProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -64,9 +63,7 @@ export default function FileList({
         <div className='space-y-1'>
           {/* List View Header */}
           <div className='grid grid-cols-12 gap-4 px-4 py-2 font-medium text-sm text-muted-foreground border-b'>
-            <div className='col-span-6'>Name</div>
-            <div className='col-span-2'>Size</div>
-            <div className='col-span-3'>Modified</div>
+            <div className='col-span-11'>Name</div>
             <div className='col-span-1'>Actions</div>
           </div>
 

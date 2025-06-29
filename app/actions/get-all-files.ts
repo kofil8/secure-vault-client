@@ -29,19 +29,19 @@ export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
     const rawFiles = data?.data?.result;
 
     interface RawFile {
-      _id: string;
+      id: string;
       fileName: string;
       fileType: string;
       fileSize: number;
       updatedAt: string;
       isFavorite?: boolean;
-      fileUrl?: string;
+      fileUrl: string;
     }
 
     const mappedFiles = Array.isArray(rawFiles)
       ? rawFiles
           .map((file: RawFile) => ({
-            id: file._id,
+            id: file.id,
             name: file.fileName,
             type: file.fileType,
             size: formatFileSize(file.fileSize),
