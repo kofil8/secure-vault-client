@@ -44,6 +44,7 @@ export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
             id: file.id,
             name: file.fileName,
             type: file.fileType,
+            fileUrl: file.fileUrl,
             size: formatFileSize(file.fileSize),
             modified: formatModifiedTime(file.updatedAt),
             updatedAt: file.updatedAt,
