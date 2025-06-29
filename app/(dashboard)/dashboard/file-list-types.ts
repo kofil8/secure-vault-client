@@ -5,5 +5,6 @@ export type DashboardFile = {
   size: string;
   modified: string;
   starred: boolean;
+  fileUrl: string;
   thumbnail?: string;
 };
