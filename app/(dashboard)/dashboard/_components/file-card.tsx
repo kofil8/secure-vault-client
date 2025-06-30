@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils";
 import { MoreVertical, Star } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { deleteFile } from "@/app/actions/delete-file";
 import Lightbox from "yet-another-react-lightbox"; // Import Lightbox
 import "yet-another-react-lightbox/styles.css"; // Import Lightbox CSS
+import { handleDownload } from "@/app/actions/download-file";
+import { deleteFile } from "@/app/actions/delete-file";
 
 type FileProps = {
   file: {
@@ -44,29 +45,41 @@ export default function FileCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false); // Lightbox open state
 
-  // Function to handle file preview
+  // Function to handle image preview in Lightbox
   const handlePreview = () => {
-    const previewUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file.name}`;
-    console.log("Preview URL:", previewUrl); // Log URL for debugging
+    const previewUrl = file.fileUrl;
 
-    if (file.type === "application/pdf") {
+    if (file.type === "pdf") {
       // For PDFs, use Google Docs Viewer
       const googleDocsViewerUrl = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(
         previewUrl
       )}`;
       window.open(googleDocsViewerUrl, "_blank");
-    } else if (file.type.startsWith("image/")) {
-      // For images, open lightbox
-      setIsOpen(true);
     } else if (
       file.type ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
-      // For DOCX, use Google Docs Viewer
+      // For DOCX files, use Google Docs Viewer
       const googleDocsViewerUrl = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(
         previewUrl
       )}`;
       window.open(googleDocsViewerUrl, "_blank");
+    } else if (
+      file.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.type === "application/vnd.ms-excel"
+    ) {
+      // For Excel files, use Google Sheets Viewer
+      const googleSheetsViewerUrl = `https://docs.google.com/spreadsheets/d/e/2PACX-1vRhdg4z8xGgxtTxNB9v7DNFdo7b0doYnh5Wjlh7wVJ9OkDpSy1qA0l78L1wvu9UuxtDnlvW_1NVwghZ/pub?output=xlsx`;
+      window.open(googleSheetsViewerUrl, "_blank");
+    } else if (
+      file.type === "png" ||
+      file.type === "jpg" ||
+      file.type === "jpeg" ||
+      file.type === "gif" ||
+      file.type === "webp"
+    ) {
+      setIsOpen(true); // Open lightbox for image preview
     } else {
       toast.error("Preview not available for this file type.");
     }
@@ -119,10 +132,10 @@ export default function FileCard({
           )}
         >
           {file.thumbnail &&
-          (file.type.startsWith("image/png") ||
-            file.type.startsWith("image/jpg") ||
-            file.type.startsWith("image/jpeg") ||
-            file.type.startsWith("image/webp")) ? (
+          (file.type === "image/png" ||
+            file.type === "image/jpg" ||
+            file.type === "image/jpeg" ||
+            file.type === "image/webp") ? (
             <Image
               src={file.thumbnail}
               alt={file.name}
@@ -198,7 +211,11 @@ export default function FileCard({
                   <DropdownMenuItem onClick={handlePreview}>
                     Preview
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Download</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleDownload(file.id, file.name)}
+                  >
+                    Download
+                  </DropdownMenuItem>
                   {showDeleteConfirm ? (
                     <DropdownMenuItem
                       className='text-destructive focus:bg-destructive/10'
@@ -233,7 +250,7 @@ export default function FileCard({
           close={() => setIsOpen(false)}
           slides={[
             {
-              src: `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${file.name}`,
+              src: file.fileUrl, // Use the correct file URL from backend
             },
           ]}
         />

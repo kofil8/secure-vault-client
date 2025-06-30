@@ -64,14 +64,6 @@ export default function FileVaultDashboard() {
     const result = await createFile(type);
 
     if (result.success) {
-      const fileUrl = result.fileUrl;
-
-      // Create a link to download the file
-      const a = document.createElement("a");
-      a.href = fileUrl;
-      a.download = fileUrl.split("/").pop(); // Extracts filename from URL
-      a.click();
-
       toast.success("File created successfully!");
     } else {
       toast.error(result.message); // Display error message from action result
@@ -92,7 +84,7 @@ export default function FileVaultDashboard() {
 
       <div className='flex-1 space-y-4 p-4 md:p-6 overflow-auto'>
         {/* Storage Metrics */}
-        <div className='grid gap-3 grid-cols-1 md:grid-cols-2'>
+        <div className='grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2'>
           <Card className='hover:shadow transition-shadow'>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
               <CardTitle className='text-sm font-medium'>Total Files</CardTitle>
@@ -157,8 +149,14 @@ export default function FileVaultDashboard() {
 
       {/* Modal to Select File Type */}
       {showModal && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center'>
-          <div className='bg-white p-6 rounded-lg shadow-lg'>
+        <div
+          className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center'
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className='bg-white p-6 rounded-lg shadow-lg'
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className='text-xl font-semibold mb-4'>Select File Type</h2>
             <div className='flex space-x-4'>
               <button
