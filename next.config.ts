@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    domains: ["localhost"],
+    domains: ["localhost", "srv880652.hstgr.cloud"],
   },
 };
 

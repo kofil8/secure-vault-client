@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { MoreVertical, Star } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
@@ -92,17 +91,28 @@ export default function FileCard({
 
   const handleOpenWithEditor = async (fileId: string) => {
     try {
+      // Fetch the editor config from your backend API
       const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE_URL
-        }//files/box/shared-link/${encodeURIComponent(fileId)}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/files/editor-config/${fileId}`,
         {
           method: "GET",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
         }
       );
       const data = await response.json();
-      if (response.ok && data.sharedLinkUrl) {
-        window.open(data.sharedLinkUrl, "_blank");
+
+      if (response.ok && data.data) {
+        const { document, editorConfig } = data.data;
+
+        // Open the file in OnlyOffice Editor (URL from OnlyOffice Cloud)
+        const editorUrl = `https://documentserver.onlyoffice.com/editor/embedded?url=${encodeURIComponent(
+          document.url
+        )}&user=${encodeURIComponent(editorConfig.user.name)}`;
+
+        // Open the editor in a new tab
+        window.open(editorUrl, "_blank");
       } else {
         toast.error("Unable to generate the editor link.");
       }
@@ -120,21 +130,8 @@ export default function FileCard({
       file.type === "jpeg" ||
       file.type === "gif" ||
       file.type === "webp"
-    ) {
-      return (
-        <Image
-          src={file.thumbnail || file.fileUrl}
-          alt={file.name}
-          fill
-          className='object-cover rounded-lg transition-transform duration-200 group-hover:scale-105'
-          sizes={
-            viewMode === "grid"
-              ? "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              : "48px"
-          }
-        />
-      );
-    }
+    )
+      return <span className='text-3xl'>🏞️</span>;
     if (file.type === "pdf") return <span className='text-3xl'>📄</span>;
     if (file.type === "docx") return <span className='text-3xl'>📝</span>;
     if (
@@ -248,6 +245,7 @@ export default function FileCard({
                 >
                   Open with Editor
                 </DropdownMenuItem>
+
                 <DropdownMenuItem
                   className='hover:bg-primary/10 cursor-pointer'
                   onClick={() => handleDownload(file.id, file.name)}

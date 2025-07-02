@@ -1,11 +1,10 @@
-// app/actions/get-profile.ts
 "use server";
 
 import { cookies } from "next/headers";
 
 export async function getProfile() {
-    
-  const token = (await cookies()).get("accessToken")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
 
   if (!token) return null;
 
