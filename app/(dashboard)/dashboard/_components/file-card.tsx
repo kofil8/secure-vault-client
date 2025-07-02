@@ -54,11 +54,7 @@ export default function FileCard({
         previewUrl
       )}`;
       window.open(googleDocsViewerUrl, "_blank");
-    } else if (
-      file.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-      file.type === "xlsx"
-    ) {
+    } else if (file.type === "xlsx") {
       const googleSheetsViewerUrl = `https://docs.google.com/spreadsheets/d/e/2PACX-1vRhdg4z8xGgxtTxNB9v7DNFdo7b0doYnh5Wjlh7wVJ9OkDpSy1qA0l78L1wvu9UuxtDnlvW_1NVwghZ/pub?output=xlsx`;
       window.open(googleSheetsViewerUrl, "_blank");
     } else if (
