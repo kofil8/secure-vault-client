@@ -93,7 +93,7 @@ export default function FileCard({
     try {
       // Fetch the editor config from your backend API
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/files/editor-config/${fileId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/editor-config/${fileId}`,
         {
           method: "GET",
           headers: {
