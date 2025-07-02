@@ -1,4 +1,3 @@
-// app/actions/change-password.ts
 "use server";
 
 import { cookies } from "next/headers";
