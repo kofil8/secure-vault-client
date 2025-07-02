@@ -96,9 +96,6 @@ export default function FileCard({
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/editor-config/${fileId}`,
         {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
         }
       );
       const data = await response.json();
