@@ -13,6 +13,7 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { handleDownload } from "@/app/actions/download-file";
 import { deleteFile } from "@/app/actions/delete-file";
+import { handleOpenWithEditor } from "@/app/actions/handle-edit";
 
 type FileProps = {
   file: {
@@ -86,36 +87,6 @@ export default function FileCard({
     } catch (error) {
       onDeleteError(error);
       toast.error("An error occurred while deleting the file.");
-    }
-  };
-
-  const handleOpenWithEditor = async (fileId: string) => {
-    try {
-      // Fetch the editor config from your backend API
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/editor-config/${fileId}`,
-        {
-          method: "GET",
-        }
-      );
-      const data = await response.json();
-
-      if (response.ok && data.data) {
-        const { document, editorConfig } = data.data;
-
-        // Open the file in OnlyOffice Editor (URL from OnlyOffice Cloud)
-        const editorUrl = `https://documentserver.onlyoffice.com/editor/embedded?url=${encodeURIComponent(
-          document.url
-        )}&user=${encodeURIComponent(editorConfig.user.name)}`;
-
-        // Open the editor in a new tab
-        window.open(editorUrl, "_blank");
-      } else {
-        toast.error("Unable to generate the editor link.");
-      }
-    } catch (error) {
-      toast.error("An error occurred while opening the file.");
-      console.error(error);
     }
   };
 
