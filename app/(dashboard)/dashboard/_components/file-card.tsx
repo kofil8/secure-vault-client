@@ -1,6 +1,7 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+
+import { deleteFile } from "@/app/actions/delete-file";
+import { handleDownload } from "@/app/actions/download-file";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -10,11 +11,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { MoreVertical, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import { handleDownload } from "@/app/actions/download-file";
-import { deleteFile } from "@/app/actions/delete-file";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type FileProps = {
   file: {
@@ -43,8 +53,9 @@ export default function FileCard({
   onDeleteError,
 }: FileProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const router = useRouter();
 
   const handlePreview = () => {
@@ -83,7 +94,6 @@ export default function FileCard({
     }
   };
 
-  // Helper for file type icons
   const getFileIcon = () => {
     if (
       file.type === "png" ||
@@ -178,7 +188,7 @@ export default function FileCard({
               : "pr-3"
           )}
         >
-          {(isHovered || isSelected || viewMode === "list") && (
+          {(isSelected || viewMode === "list") && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -194,61 +204,38 @@ export default function FileCard({
                 onClick={(e) => e.stopPropagation()}
                 className='min-w-[180px] rounded-lg shadow-lg border bg-white'
               >
-                <DropdownMenuItem
-                  className='hover:bg-primary/10 cursor-pointer'
-                  onClick={handlePreview}
-                >
-                  Preview
+                <DropdownMenuItem onClick={handlePreview}>
+                  👁️‍🗨️ Preview
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => router.push(`/editor/${file.id}`)}
+                  onClick={() => router.push(`/doc-editor/${file.id}`)}
                 >
                   ✏️ Edit with Editor
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
-                  className='hover:bg-primary/10 cursor-pointer'
-                  onClick={() => handleDownload(file.id, file.name)}
+                  onClick={() => router.push(`/xlsx-editor/${file.id}`)}
                 >
-                  Download
+                  ✏️ Edit Excel
                 </DropdownMenuItem>
-                {showDeleteConfirm ? (
-                  <>
-                    <DropdownMenuItem
-                      className='text-destructive focus:bg-destructive/10 font-semibold'
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        await handleDelete(file.id);
-                        setShowDeleteConfirm(false);
-                      }}
-                    >
-                      Confirm Delete
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className='hover:bg-muted cursor-pointer'
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowDeleteConfirm(false);
-                      }}
-                    >
-                      Cancel
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem
-                    className='hover:bg-destructive/10 text-destructive cursor-pointer'
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem
+                  onClick={() => handleDownload(file.id, file.name)}
+                  className='hover:bg-primary/10 cursor-pointer'
+                >
+                  ⬇️ Download
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className='hover:bg-destructive/10 text-destructive cursor-pointer'
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  🗑 Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
       </Card>
 
-      {/* Lightbox for Image Preview */}
+      {/* Lightbox Preview */}
       {isOpen && (
         <Lightbox
           open={isOpen}
@@ -260,6 +247,36 @@ export default function FileCard({
           ]}
         />
       )}
+
+      {/* Modal Confirmation */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete “{file.name}”?</DialogTitle>
+          </DialogHeader>
+          <p className='text-sm text-muted-foreground mb-4'>
+            Are you sure you want to delete this file? This action cannot be
+            undone.
+          </p>
+          <DialogFooter className='flex justify-end gap-2'>
+            <Button
+              variant='outline'
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={async () => {
+                await handleDelete(file.id);
+                setShowDeleteConfirm(false);
+              }}
+            >
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
