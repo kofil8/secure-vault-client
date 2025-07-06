@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { cookies } from "next/headers";
@@ -26,9 +25,11 @@ export async function logoutUser() {
       throw new Error(error.message || "Logout failed");
     }
 
+    // Remove the access token cookie
     (await cookies()).delete("accessToken");
 
-    return { success: true };
+    // Instead of redirecting here, we return a signal for client-side redirection
+    return { success: true, redirectToLogin: true }; // Returning the redirect signal
   } catch (error: any) {
     console.log("err", error);
     throw new Error(error.message || "Logout failed");

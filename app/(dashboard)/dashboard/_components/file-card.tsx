@@ -1,3 +1,5 @@
+"use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -13,7 +15,6 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { handleDownload } from "@/app/actions/download-file";
 import { deleteFile } from "@/app/actions/delete-file";
-import { handleOpenWithEditor } from "@/app/actions/handle-edit";
 
 type FileProps = {
   file: {
@@ -25,8 +26,6 @@ type FileProps = {
     starred: boolean;
     fileUrl: string;
     thumbnail?: string;
-    googleDocId?: string;
-    googleSheetId?: string;
   };
   viewMode: "grid" | "list";
   isSelected?: boolean;
@@ -46,6 +45,7 @@ export default function FileCard({
   const [isHovered, setIsHovered] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
 
   const handlePreview = () => {
     const previewUrl = file.fileUrl;
@@ -54,11 +54,6 @@ export default function FileCard({
         previewUrl
       )}`;
       window.open(googleDocsViewerUrl, "_blank");
-    } else if (file.type === "xlsx") {
-      const googleSheetsViewerUrl = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(
-        previewUrl
-      )}`;
-      window.open(googleSheetsViewerUrl, "_blank");
     } else if (
       file.type === "png" ||
       file.type === "jpg" ||
@@ -206,10 +201,9 @@ export default function FileCard({
                   Preview
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className='hover:bg-primary/10 cursor-pointer'
-                  onClick={() => handleOpenWithEditor(file.id)}
+                  onClick={() => router.push(`/editor/${file.id}`)}
                 >
-                  Open with Editor
+                  ✏️ Edit with Editor
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
