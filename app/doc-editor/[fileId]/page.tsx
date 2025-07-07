@@ -10,50 +10,41 @@ export default function EditorPage() {
 
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [filename, setFilename] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [docViewer, setDocViewer] = useState<any>(null);
 
-  // Fetch file info and construct file URL
   useEffect(() => {
     if (!fileId) return;
-
     const fetchFile = async () => {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${fileId}`
         );
-
-        if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
+        if (!res.ok) throw new Error(`Failed to fetch file (${res.status})`);
         const data = await res.json();
 
         const actualFilename =
-          data?.data?.filename || data?.data?.fileName || data?.data?.name;
-
-        if (!actualFilename) throw new Error("Filename missing in response");
+          data?.data?.fileName || data?.data?.filename || data?.data?.name;
+        if (!actualFilename) throw new Error("Missing filename in response");
 
         const finalUrl = `${process.env.NEXT_PUBLIC_UPLOAD_BASE_URL}/${actualFilename}`;
         setFilename(actualFilename);
         setFileUrl(finalUrl);
-        console.log("📄 File loaded for WebViewer:", finalUrl);
       } catch (err: any) {
-        console.error("Error fetching file:", err.message || err);
-        toast.error(`❌ ${err.message || "Failed to load file"}`);
+        console.error("Error fetching file:", err);
+        toast.error(`❌ ${err.message || "Could not load file"}`);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchFile();
   }, [fileId]);
 
-  // Load WebViewer
   useEffect(() => {
     if (!fileUrl || !viewerRef.current) return;
-
     const loadViewer = async () => {
       const WebViewer = (await import("@pdftron/webviewer")).default;
-
       WebViewer(
         {
           path: "/lib/webviewer",
@@ -63,93 +54,80 @@ export default function EditorPage() {
         },
         viewerRef.current!
       ).then((instance) => {
-        const viewer = instance.Core.documentViewer;
-        setDocViewer(viewer);
+        setDocViewer(instance.Core.documentViewer);
         setIsLoading(false);
       });
     };
-
     loadViewer();
   }, [fileUrl]);
 
-  // Auto-save every 30 seconds
   useEffect(() => {
     if (!docViewer || !filename || !fileId) return;
 
     const interval = setInterval(() => {
-      handleSave(docViewer, filename, fileId, setLastSaved, true);
-    }, 30000);
+      const now = new Date();
+      if (!lastSaved || now.getTime() - lastSaved.getTime() > 60000) {
+        handleSave(true);
+      }
+    }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, [docViewer, filename, fileId]);
+  }, [docViewer, filename, fileId, lastSaved]);
 
-  const handleSave = async (
-    viewer: any,
-    filename: string,
-    fileId: string,
-    setLastSaved: (d: Date) => void,
-    silent = false
-  ) => {
+  const handleSave = async (silent = false) => {
+    if (!docViewer || !filename || !fileId) return;
     try {
-      const data = await viewer.getDocument().getFileData();
+      const data = await docViewer.getDocument().getFileData();
       const blob = new Blob([data], { type: getMime(filename) });
-
       const formData = new FormData();
       formData.append("file", blob, filename);
 
-      console.log("FormData being sent:", formData); // Debugging log to inspect FormData
-
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${fileId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/content/${fileId}`,
         {
-          method: "PUT",
+          method: "PATCH",
           body: formData,
         }
       );
 
       if (!res.ok) {
         const errorData = await res.json();
-        console.error("Error response:", errorData); // Log response to see the error details
-        throw new Error(`Error saving file: ${res.statusText}`);
+        throw new Error(errorData?.message || res.statusText);
       }
 
-      const updatedData = await res.json();
-      setFilename(updatedData.data.fileName);
-      setFileUrl(updatedData.data.fileUrl);
+      const updated = await res.json();
+      setFilename(updated.data.fileName);
+      setFileUrl(updated.data.fileUrl);
 
-      if (!silent) toast.success("✅ File saved");
+      if (!silent) toast.success("✅ File saved successfully");
       setLastSaved(new Date());
     } catch (err: any) {
-      console.error("Save failed:", err.message || err);
+      console.error("Save failed:", err);
       toast.error("❌ Save failed");
     }
   };
 
   const handleDownload = async () => {
     if (!docViewer || !filename) return;
-
     const fileData = await docViewer.getDocument().getFileData();
     const blob = new Blob([fileData], { type: getMime(filename) });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     link.click();
-
-    URL.revokeObjectURL(url); // prevent memory leaks
+    URL.revokeObjectURL(url);
     toast.success("⬇️ Download started");
   };
 
   const renderAutosaveStatus = () => {
     if (!lastSaved) return "🕒 Not saved yet";
-    const seconds = Math.floor((Date.now() - lastSaved.getTime()) / 1000);
-    return `💾 Autosaved ${seconds}s ago`;
+    const secondsAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000);
+    return `💾 Autosaved ${secondsAgo}s ago`;
   };
 
   return (
     <div className='w-full h-screen relative dark:bg-gray-900'>
-      {/* Top Bar */}
       <div className='fixed top-0 w-full z-10 flex justify-between items-center px-4 py-2 bg-white dark:bg-gray-800 shadow-sm'>
         <div className='text-sm text-gray-800 dark:text-white truncate max-w-xs'>
           {filename || "..."}
@@ -160,9 +138,7 @@ export default function EditorPage() {
           </span>
           <button
             className='px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
-            onClick={() =>
-              handleSave(docViewer, filename, fileId, setLastSaved)
-            }
+            onClick={() => handleSave(false)}
           >
             💾 Save
           </button>
@@ -175,20 +151,17 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {/* Loading Spinner */}
       {isLoading && (
         <div className='absolute inset-0 z-20 flex items-center justify-center bg-white dark:bg-gray-900'>
           <div className='animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent' />
         </div>
       )}
 
-      {/* WebViewer */}
       <div ref={viewerRef} className='w-full h-full pt-[60px]' />
     </div>
   );
 }
 
-// Helper: MIME type from file extension
 function getMime(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
   switch (ext) {

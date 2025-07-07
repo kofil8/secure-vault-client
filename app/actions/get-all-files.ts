@@ -2,7 +2,17 @@
 
 import { cookies } from "next/headers";
 
-export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
+interface FetchParams {
+  filetype?: string;
+  searchTerm?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export async function getAllFiles({
+  filetype,
+  searchTerm = "",
+  sortOrder = "desc",
+}: FetchParams) {
   const token = (await cookies()).get("accessToken")?.value;
 
   if (!token) {
@@ -11,14 +21,21 @@ export async function getAllFiles(sortOrder: "asc" | "desc" = "desc") {
   }
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/files`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-      cache: "no-store",
-    });
+    const query = new URLSearchParams();
+    if (filetype) query.append("filetype", filetype);
+    if (searchTerm) query.append("searchTerm", searchTerm);
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/files?${query.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
 
     if (!res.ok) {
       const error = await res.json();

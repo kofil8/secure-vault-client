@@ -3,52 +3,63 @@ import axios from "axios";
 
 const IPINFO_API_TOKEN = process.env.IPINFO_API_TOKEN;
 const ALLOWED_NORDVPN_IP = process.env.ALLOWED_NORDVPN_IP;
-const protectedRoutes = ["/dashboard", "/change-password", "/editor"];
+
+const protectedRoutes = ["/dashboard", "/change-password", "/doc-editor"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-
   const hostname = request.headers.get("host") || "";
   const isLocalhost =
     hostname.startsWith("localhost") || hostname.startsWith("127.0.0.1");
 
-  // ✅ Skip VPN check during local development
-  if (isLocalhost) {
+  const token = request.cookies.get("accessToken")?.value;
+
+  // ✅ Allow public access without IP check if not protected route
+  const isProtected = protectedRoutes.some((route) => path.startsWith(route));
+  if (!isProtected) {
     return NextResponse.next();
   }
 
-  const clientIP =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "0.0.0.0";
+  // ✅ Redirect to /login if trying to access protected route without token
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
-  console.log("Client IP:", clientIP);
-  console.log("Allowed IP:", ALLOWED_NORDVPN_IP);
+  // ✅ Skip VPN check for localhost
+  if (isLocalhost) return NextResponse.next();
 
+  // 🔍 Extract client IP
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const clientIP = forwardedFor?.split(",")[0]?.trim() || "0.0.0.0";
+
+  // 🧪 VPN/Proxy/Tor check using ipinfo.io
   try {
     const { data } = await axios.get(
       `https://ipinfo.io/${clientIP}?token=${IPINFO_API_TOKEN}`
     );
 
-    const isVPN = data.privacy?.vpn === true;
-    const isProxy = data.privacy?.proxy === true;
-    const isTor = data.privacy?.tor === true;
-
+    const { vpn, proxy, tor } = data?.privacy || {};
+    const isBlocked = vpn || proxy || tor;
     const isAllowedIP = clientIP === ALLOWED_NORDVPN_IP;
 
-    if (!isAllowedIP || isVPN || isProxy || isTor) {
+    console.log("🛡️ IP Check Report:", {
+      clientIP,
+      isAllowedIP,
+      vpn,
+      proxy,
+      tor,
+    });
+
+    if (!isAllowedIP || isBlocked) {
       return new NextResponse("Access denied: Unauthorized IP", {
         status: 403,
       });
     }
   } catch (error) {
-    console.error("IP check failed:", error);
-    return new NextResponse("Access denied: IP check failed", { status: 403 });
-  }
-
-  if (protectedRoutes.some((route) => path.startsWith(route))) {
-    const token = request.cookies.get("accessToken")?.value;
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+    console.error("🔴 VPN check failed:", error);
+    return new NextResponse("Access denied: VPN check failed", {
+      status: 403,
+    });
   }
 
   return NextResponse.next();

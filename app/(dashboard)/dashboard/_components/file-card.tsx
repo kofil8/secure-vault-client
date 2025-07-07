@@ -9,15 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { MoreVertical, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
-import Lightbox from "yet-another-react-lightbox";
-import "yet-another-react-lightbox/styles.css";
-
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { MoreVertical, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 
 type FileProps = {
   file: {
@@ -52,27 +51,18 @@ export default function FileCard({
   onDeleteSuccess,
   onDeleteError,
 }: FileProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
+  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const handlePreview = () => {
-    const previewUrl = file.fileUrl;
-    if (file.type === "pdf" || file.type === "docx") {
-      const googleDocsViewerUrl = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(
-        previewUrl
-      )}`;
-      window.open(googleDocsViewerUrl, "_blank");
-    } else if (
-      file.type === "png" ||
-      file.type === "jpg" ||
-      file.type === "jpeg" ||
-      file.type === "gif" ||
-      file.type === "webp"
-    ) {
+    if (["png", "jpg", "jpeg", "gif", "webp"].includes(file.type)) {
       setIsOpen(true);
+    } else if (["pdf", "docx"].includes(file.type)) {
+      const url = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(
+        file.fileUrl
+      )}`;
+      window.open(url, "_blank");
     } else {
       toast.error("Preview not available for this file type.");
     }
@@ -81,7 +71,8 @@ export default function FileCard({
   const handleDelete = async (fileId: string) => {
     try {
       const result = await deleteFile(fileId);
-      if (result.success) {
+      console.log("Delete result:", result);
+      if (result.success === true) {
         onDeleteSuccess(fileId);
         toast.success(result.message);
       } else {
@@ -95,51 +86,43 @@ export default function FileCard({
   };
 
   const getFileIcon = () => {
-    if (
-      file.type === "png" ||
-      file.type === "jpg" ||
-      file.type === "jpeg" ||
-      file.type === "gif" ||
-      file.type === "webp"
-    )
-      return <span className='text-3xl'>🏞️</span>;
-    if (file.type === "pdf") return <span className='text-3xl'>📄</span>;
-    if (file.type === "docx") return <span className='text-3xl'>📝</span>;
-    if (
-      file.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-      file.type === "xlsx"
-    )
-      return <span className='text-3xl'>📊</span>;
-    return <span className='text-3xl'>📁</span>;
+    const map: { [key: string]: string } = {
+      png: "🏞️",
+      jpg: "🏞️",
+      jpeg: "🏞️",
+      gif: "🏞️",
+      webp: "🏞️",
+      pdf: "📄",
+      docx: "📝",
+      xlsx: "📊",
+    };
+    return <span className='text-4xl'>{map[file.type] || "📁"}</span>;
   };
 
   return (
     <div
       className={cn(
-        "relative group transition-shadow",
+        "relative group transition-all duration-200",
         viewMode === "grid" ? "h-full" : "w-full"
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onClick={onSelect}
     >
       <Card
         className={cn(
-          "h-full overflow-hidden transition-all border-2 shadow-sm bg-white hover:shadow-xl",
-          isSelected ? "border-primary bg-primary/10" : "border-muted",
-          viewMode === "grid"
-            ? "hover:border-primary/40 flex flex-col"
-            : "hover:bg-muted/70 flex-row items-center"
+          "relative h-full overflow-hidden rounded-2xl border bg-white/70 backdrop-blur-sm transition-all duration-200",
+          isSelected
+            ? "border-black ring-2 ring-black/70 shadow-lg scale-[1.02]"
+            : "border-gray-200 hover:border-black/20 hover:shadow-md",
+          viewMode === "grid" ? "flex flex-col" : "flex-row items-center"
         )}
       >
         {/* Thumbnail */}
         <div
           className={cn(
-            "relative flex items-center justify-center bg-muted rounded-lg shadow-sm border border-muted-foreground/10",
+            "relative flex items-center justify-center rounded-xl border bg-gradient-to-br from-gray-100 to-gray-200 shadow-inner",
             viewMode === "grid"
-              ? "aspect-square w-full mb-2"
-              : "w-14 h-14 min-w-[3.5rem] mx-4 my-2"
+              ? "aspect-square w-full mb-3"
+              : "w-16 h-16 min-w-[4rem] mx-4 my-2"
           )}
         >
           {getFileIcon()}
@@ -148,7 +131,7 @@ export default function FileCard({
           )}
         </div>
 
-        {/* File Info */}
+        {/* Info */}
         <CardContent
           className={cn(
             "flex-1 min-w-0 p-3",
@@ -159,19 +142,14 @@ export default function FileCard({
         >
           <div className='min-w-0 w-full'>
             <h3
-              className='text-base font-semibold truncate text-foreground'
+              className='text-sm font-medium truncate text-gray-900'
               title={file.name}
             >
               {file.name.length > 30
                 ? file.name.slice(0, 27) + "..."
                 : file.name}
             </h3>
-            <div
-              className={cn(
-                "flex items-center gap-2 text-xs text-muted-foreground mt-1",
-                viewMode === "grid" ? "truncate" : ""
-              )}
-            >
+            <div className='flex items-center gap-2 text-xs text-gray-500 mt-1'>
               <span>{file.size}</span>
               <span className='hidden sm:inline'>•</span>
               <span className='hidden sm:inline'>{file.modified}</span>
@@ -179,12 +157,12 @@ export default function FileCard({
           </div>
         </CardContent>
 
-        {/* Actions */}
+        {/* Dropdown */}
         <div
           className={cn(
             "flex items-center transition-opacity",
             viewMode === "grid"
-              ? "absolute top-2 right-2 gap-1 opacity-0 group-hover:opacity-100"
+              ? "absolute top-2 right-2 opacity-0 group-hover:opacity-100"
               : "pr-3"
           )}
         >
@@ -192,40 +170,39 @@ export default function FileCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className='p-1 rounded-full hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary'
+                  className='p-1.5 rounded-full bg-white/80 backdrop-blur hover:bg-black/10 transition'
                   onClick={(e) => e.stopPropagation()}
                   aria-label='File actions'
                 >
-                  <MoreVertical className='w-5 h-5 text-muted-foreground' />
+                  <MoreVertical className='w-5 h-5 text-gray-600' />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align='end'
                 onClick={(e) => e.stopPropagation()}
-                className='min-w-[180px] rounded-lg shadow-lg border bg-white'
+                className='min-w-[180px] rounded-xl shadow-lg border bg-white'
               >
                 <DropdownMenuItem onClick={handlePreview}>
-                  👁️‍🗨️ Preview
+                  👁 Preview
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => router.push(`/doc-editor/${file.id}`)}
                 >
-                  ✏️ Edit with Editor
+                  📝 Edit with Editor
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => router.push(`/xlsx-editor/${file.id}`)}
                 >
-                  ✏️ Edit Excel
+                  📊 Edit Excel
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleDownload(file.id, file.name)}
-                  className='hover:bg-primary/10 cursor-pointer'
                 >
                   ⬇️ Download
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className='hover:bg-destructive/10 text-destructive cursor-pointer'
                   onClick={() => setShowDeleteConfirm(true)}
+                  className='text-destructive hover:bg-destructive/10'
                 >
                   🗑 Delete
                 </DropdownMenuItem>
@@ -235,26 +212,22 @@ export default function FileCard({
         </div>
       </Card>
 
-      {/* Lightbox Preview */}
+      {/* Image Lightbox */}
       {isOpen && (
         <Lightbox
           open={isOpen}
           close={() => setIsOpen(false)}
-          slides={[
-            {
-              src: file.fileUrl,
-            },
-          ]}
+          slides={[{ src: file.fileUrl }]}
         />
       )}
 
-      {/* Modal Confirmation */}
+      {/* Modal Delete */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete “{file.name}”?</DialogTitle>
           </DialogHeader>
-          <p className='text-sm text-muted-foreground mb-4'>
+          <p className='text-sm text-gray-500 mb-4'>
             Are you sure you want to delete this file? This action cannot be
             undone.
           </p>
