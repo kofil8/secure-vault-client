@@ -4,7 +4,7 @@ import axios from "axios";
 const IPINFO_API_TOKEN = process.env.IPINFO_API_TOKEN;
 const ALLOWED_NORDVPN_IP = process.env.ALLOWED_NORDVPN_IP;
 
-const protectedRoutes = ["/dashboard", "/change-password", "/doc-editor"];
+const protectedRoutes = ["/dashboard", "/change-password", "/editor"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;

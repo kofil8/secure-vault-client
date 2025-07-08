@@ -58,11 +58,6 @@ export default function FileCard({
   const handlePreview = () => {
     if (["png", "jpg", "jpeg", "gif", "webp"].includes(file.type)) {
       setIsOpen(true);
-    } else if (["pdf", "docx"].includes(file.type)) {
-      const url = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(
-        file.fileUrl
-      )}`;
-      window.open(url, "_blank");
     } else {
       toast.error("Preview not available for this file type.");
     }
@@ -182,19 +177,25 @@ export default function FileCard({
                 onClick={(e) => e.stopPropagation()}
                 className='min-w-[180px] rounded-xl shadow-lg border bg-white'
               >
-                <DropdownMenuItem onClick={handlePreview}>
-                  👁 Preview
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => router.push(`/doc-editor/${file.id}`)}
-                >
-                  📝 Edit with Editor
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => router.push(`/xlsx-editor/${file.id}`)}
-                >
-                  📊 Edit Excel
-                </DropdownMenuItem>
+                {["png", "jpg", "jpeg", "gif", "webp"].includes(file.type) && (
+                  <DropdownMenuItem onClick={handlePreview}>
+                    👁 Preview
+                  </DropdownMenuItem>
+                )}
+                {["pdf", "docx", "xlsx"].includes(file.type) && (
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/editor/${file.id}`)}
+                  >
+                    📝 Open with Editor
+                  </DropdownMenuItem>
+                )}
+                {["xlsx"].includes(file.type) && (
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/excel-editor/${file.id}`)}
+                  >
+                    📝 Edit Excel file
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => handleDownload(file.id, file.name)}
                 >

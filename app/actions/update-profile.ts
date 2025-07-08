@@ -42,10 +42,12 @@ export async function updateProfileAction(formData: FormData): Promise<{
       success: true,
       message: data?.message || "Profile updated successfully",
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+
     return {
       success: false,
-      message: err?.message || "Unexpected error",
+      message,
     };
   }
 }

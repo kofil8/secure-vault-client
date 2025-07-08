@@ -1,8 +1,21 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import toast from "react-hot-toast";
+
+// ✅ Fallback types for Apryse document viewer instance
+type DocumentViewer = {
+  getDocument: () => {
+    getFileData: () => Promise<ArrayBuffer>;
+  };
+};
+
+type WebViewerInstanceFallback = {
+  Core: {
+    documentViewer: DocumentViewer;
+  };
+};
 
 export default function EditorPage() {
   const { fileId } = useParams() as { fileId: string };
@@ -12,39 +25,46 @@ export default function EditorPage() {
   const [filename, setFilename] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [docViewer, setDocViewer] = useState<any>(null);
+  const [docViewer, setDocViewer] = useState<DocumentViewer | null>(null);
 
   useEffect(() => {
     if (!fileId) return;
+
     const fetchFile = async () => {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/${fileId}`
         );
         if (!res.ok) throw new Error(`Failed to fetch file (${res.status})`);
-        const data = await res.json();
 
+        const data = await res.json();
         const actualFilename =
           data?.data?.fileName || data?.data?.filename || data?.data?.name;
+
         if (!actualFilename) throw new Error("Missing filename in response");
 
         const finalUrl = `${process.env.NEXT_PUBLIC_UPLOAD_BASE_URL}/${actualFilename}`;
         setFilename(actualFilename);
         setFileUrl(finalUrl);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching file:", err);
-        toast.error(`❌ ${err.message || "Could not load file"}`);
+        const message =
+          err instanceof Error ? err.message : "Could not load file";
+        toast.error(`❌ ${message}`);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchFile();
   }, [fileId]);
 
   useEffect(() => {
     if (!fileUrl || !viewerRef.current) return;
+
     const loadViewer = async () => {
       const WebViewer = (await import("@pdftron/webviewer")).default;
+
       WebViewer(
         {
           path: "/lib/webviewer",
@@ -54,12 +74,52 @@ export default function EditorPage() {
         },
         viewerRef.current!
       ).then((instance) => {
-        setDocViewer(instance.Core.documentViewer);
+        const typed = instance as unknown as WebViewerInstanceFallback;
+        setDocViewer(typed.Core.documentViewer);
         setIsLoading(false);
       });
     };
+
     loadViewer();
   }, [fileUrl]);
+
+  const handleSave = useCallback(
+    async (silent = false) => {
+      if (!docViewer || !filename || !fileId) return;
+
+      try {
+        const data = await docViewer.getDocument().getFileData();
+        const blob = new Blob([data], { type: getMime(filename) });
+        const formData = new FormData();
+        formData.append("file", blob, filename);
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/content/${fileId}`,
+          {
+            method: "PATCH",
+            body: formData,
+          }
+        );
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData?.message || res.statusText);
+        }
+
+        const updated = await res.json();
+        setFilename(updated.data.fileName);
+        setFileUrl(updated.data.fileUrl);
+
+        if (!silent) toast.success("✅ File saved successfully");
+        setLastSaved(new Date());
+      } catch (err: unknown) {
+        console.error("Save failed:", err);
+        const message = err instanceof Error ? err.message : "Save failed";
+        toast.error(`❌ ${message}`);
+      }
+    },
+    [docViewer, filename, fileId]
+  );
 
   useEffect(() => {
     if (!docViewer || !filename || !fileId) return;
@@ -69,48 +129,16 @@ export default function EditorPage() {
       if (!lastSaved || now.getTime() - lastSaved.getTime() > 60000) {
         handleSave(true);
       }
-    }, 30000); // Check every 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [docViewer, filename, fileId, lastSaved]);
-
-  const handleSave = async (silent = false) => {
-    if (!docViewer || !filename || !fileId) return;
-    try {
-      const data = await docViewer.getDocument().getFileData();
-      const blob = new Blob([data], { type: getMime(filename) });
-      const formData = new FormData();
-      formData.append("file", blob, filename);
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/files/content/${fileId}`,
-        {
-          method: "PATCH",
-          body: formData,
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData?.message || res.statusText);
-      }
-
-      const updated = await res.json();
-      setFilename(updated.data.fileName);
-      setFileUrl(updated.data.fileUrl);
-
-      if (!silent) toast.success("✅ File saved successfully");
-      setLastSaved(new Date());
-    } catch (err: any) {
-      console.error("Save failed:", err);
-      toast.error("❌ Save failed");
-    }
-  };
+  }, [docViewer, filename, fileId, lastSaved, handleSave]);
 
   const handleDownload = async () => {
     if (!docViewer || !filename) return;
-    const fileData = await docViewer.getDocument().getFileData();
-    const blob = new Blob([fileData], { type: getMime(filename) });
+
+    const data = await docViewer.getDocument().getFileData();
+    const blob = new Blob([data], { type: getMime(filename) });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

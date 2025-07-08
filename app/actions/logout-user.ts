@@ -30,8 +30,13 @@ export async function logoutUser() {
 
     // Instead of redirecting here, we return a signal for client-side redirection
     return { success: true, redirectToLogin: true }; // Returning the redirect signal
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log("err", error);
-    throw new Error(error.message || "Logout failed");
+
+    if (error instanceof Error) {
+      throw new Error(error.message || "Logout failed");
+    }
+
+    throw new Error("Logout failed");
   }
 }

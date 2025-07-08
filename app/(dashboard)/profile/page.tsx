@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function ProfileComponent() {
   const [user, setUser] = useState({
@@ -86,7 +87,7 @@ export default function ProfileComponent() {
 
     if (result.success) {
       setEditMode(false);
-      window.location.reload(); // Or re-fetch user state if preferred
+      window.location.reload();
     } else {
       alert(result.message);
     }
@@ -95,113 +96,121 @@ export default function ProfileComponent() {
   };
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-white p-6'>
-      <Card className='w-full max-w-md border border-black/10 bg-white shadow-xl'>
-        <CardHeader className='flex flex-col items-center text-center space-y-4'>
-          <Avatar className='h-20 w-20'>
-            <AvatarImage src={user.profileImage} alt={user.name} />
-            <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
+    <div className='relative min-h-screen bg-white px-4 py-6 md:py-8'>
+      {/* Top-left SidebarTrigger */}
+      <div className='absolute top-4 left-4 z-50 md:static md:mb-4'>
+        <SidebarTrigger />
+      </div>
 
-          {editMode && (
-            <Input
-              type='file'
-              accept='image/*'
-              onChange={handleImageChange}
-              className='mt-2 w-full'
-            />
-          )}
+      {/* Centered Card */}
+      <div className='flex items-center justify-center mt-20 md:mt-10'>
+        <Card className='w-full max-w-md border border-black/10 bg-white shadow-xl'>
+          <CardHeader className='flex flex-col items-center text-center space-y-4'>
+            <Avatar className='h-20 w-20'>
+              <AvatarImage src={user.profileImage} alt={user.name} />
+              <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+            </Avatar>
 
-          <div>
-            <CardTitle className='text-2xl font-bold tracking-tight text-black'>
+            {editMode && (
+              <Input
+                type='file'
+                accept='image/*'
+                onChange={handleImageChange}
+                className='mt-2 w-full'
+              />
+            )}
+
+            <div>
+              <CardTitle className='text-2xl font-bold tracking-tight text-black'>
+                {editMode ? (
+                  <Input
+                    name='name'
+                    value={form.name}
+                    onChange={handleFormChange}
+                    className='mt-2'
+                  />
+                ) : (
+                  user.name
+                )}
+              </CardTitle>
+              <CardDescription className='text-black/70'>
+                {user.email}
+              </CardDescription>
+            </div>
+          </CardHeader>
+
+          <CardContent className='space-y-4'>
+            <Separator className='bg-black/10' />
+
+            <div>
+              <p className='text-sm font-medium text-black/80'>Bio</p>
               {editMode ? (
-                <Input
-                  name='name'
-                  value={form.name}
+                <Textarea
+                  name='bio'
+                  value={form.bio}
                   onChange={handleFormChange}
-                  className='mt-2'
+                  className='mt-1'
                 />
               ) : (
-                user.name
+                <p className='text-sm text-black/60 mt-1'>{user.bio}</p>
               )}
-            </CardTitle>
-            <CardDescription className='text-black/70'>
-              {user.email}
-            </CardDescription>
-          </div>
-        </CardHeader>
+            </div>
 
-        <CardContent className='space-y-4'>
-          <Separator className='bg-black/10' />
+            <Separator className='bg-black/10' />
 
-          <div>
-            <p className='text-sm font-medium text-black/80'>Bio</p>
+            <div>
+              <p className='text-sm font-medium text-black/80'>Phone Number</p>
+              {editMode ? (
+                <Input
+                  name='phoneNumber'
+                  value={form.phoneNumber}
+                  onChange={handleFormChange}
+                  className='mt-1'
+                />
+              ) : (
+                <p className='text-sm text-black/60 mt-1'>{user.phoneNumber}</p>
+              )}
+            </div>
+          </CardContent>
+
+          <CardFooter className='flex flex-col gap-3 pt-6'>
             {editMode ? (
-              <Textarea
-                name='bio'
-                value={form.bio}
-                onChange={handleFormChange}
-                className='mt-1'
-              />
+              <>
+                <Button
+                  className='w-full bg-black text-white hover:bg-black/90'
+                  onClick={handleSubmit}
+                  disabled={loading}
+                >
+                  {loading ? "Updating..." : "Save Changes"}
+                </Button>
+                <Button
+                  variant='outline'
+                  className='w-full'
+                  onClick={() => setEditMode(false)}
+                >
+                  Cancel
+                </Button>
+              </>
             ) : (
-              <p className='text-sm text-black/60 mt-1'>{user.bio}</p>
+              <>
+                <Button
+                  variant='outline'
+                  className='w-full flex items-center justify-center gap-2'
+                  onClick={() => setEditMode(true)}
+                >
+                  <Pencil className='h-4 w-4' /> Edit Profile
+                </Button>
+                <Button
+                  className='w-full bg-black text-white hover:bg-black/90'
+                  onClick={handleLogout}
+                >
+                  <LogOut className='mr-2 h-4 w-4' /> Sign Out
+                </Button>
+              </>
             )}
-          </div>
-
-          <Separator className='bg-black/10' />
-
-          <div>
-            <p className='text-sm font-medium text-black/80'>Phone Number</p>
-            {editMode ? (
-              <Input
-                name='phoneNumber'
-                value={form.phoneNumber}
-                onChange={handleFormChange}
-                className='mt-1'
-              />
-            ) : (
-              <p className='text-sm text-black/60 mt-1'>{user.phoneNumber}</p>
-            )}
-          </div>
-        </CardContent>
-
-        <CardFooter className='flex flex-col gap-3 pt-6'>
-          {editMode ? (
-            <>
-              <Button
-                className='w-full bg-black text-white hover:bg-black/90'
-                onClick={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? "Updating..." : "Save Changes"}
-              </Button>
-              <Button
-                variant='outline'
-                className='w-full'
-                onClick={() => setEditMode(false)}
-              >
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant='outline'
-                className='w-full flex items-center justify-center gap-2'
-                onClick={() => setEditMode(true)}
-              >
-                <Pencil className='h-4 w-4' /> Edit Profile
-              </Button>
-              <Button
-                className='w-full bg-black text-white hover:bg-black/90'
-                onClick={handleLogout}
-              >
-                <LogOut className='mr-2 h-4 w-4' /> Sign Out
-              </Button>
-            </>
-          )}
-        </CardFooter>
-      </Card>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
