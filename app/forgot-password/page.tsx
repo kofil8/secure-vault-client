@@ -1,119 +1,208 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { InputField } from "@/components/ui/InputField";
-import { LoadingButton } from "@/components/ui/LoadingButton";
-import { toast } from "sonner"; // <-- Updated import here
-import {
-  getSecurityQuestions,
-  verifyAnswers,
-} from "@/app/actions/forgot-password";
+import { updateSecurityAnswers } from "@/app/actions/security";
+import clsx from "clsx";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import Modal from "./components/ui/Modal";
 
-export default function ForgotPasswordPage() {
-  const [step, setStep] = useState<"email" | "questions">("email");
-  const [email, setEmail] = useState("");
-  const [questions, setQuestions] = useState<string[]>([]);
-  const [answers, setAnswers] = useState<string[]>(["", "", ""]);
+export default function SecurityModal({
+  isOpen,
+  setIsOpen,
+  initialQuestions,
+  onSave,
+}: {
+  isOpen: boolean;
+  setIsOpen: (val: boolean) => void;
+  initialQuestions: string[];
+  onSave: (questions: string[], answers: string[]) => void;
+}) {
+  const [tab, setTab] = useState<"view" | "edit">("view");
+  const [questions, setQuestions] = useState<string[]>(
+    initialQuestions ?? ["", "", ""]
+  );
+  const [answers, setAnswers] = useState(["", "", ""]);
+  const [errors, setErrors] = useState({
+    questions: ["", "", ""],
+    answers: ["", "", ""],
+  });
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [step, setStep] = useState(0);
 
-  const handleEmailSubmit = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) return toast.error("Please enter your email");
-
-    setLoading(true);
-    const res = await getSecurityQuestions(trimmedEmail);
-    setLoading(false);
-
-    if (res.success) {
-      setQuestions(res.data.questions);
-      setStep("questions");
-      toast.success("Security questions loaded");
+  useEffect(() => {
+    if (initialQuestions?.length === 3) {
+      setQuestions(initialQuestions);
     } else {
-      toast.error(res.message || "Something went wrong");
+      setQuestions(["", "", ""]);
     }
+  }, [initialQuestions]);
+
+  const validate = () => {
+    const qErr = questions.map((q) => (q.trim() ? "" : "Required"));
+    const aErr = answers.map((a) => (a.trim() ? "" : "Required"));
+    setErrors({ questions: qErr, answers: aErr });
+    return [...qErr, ...aErr].every((v) => !v);
   };
 
-  const handleVerifyAnswers = async () => {
-    const trimmedAnswers = answers.map((a) => a.trim());
-    if (trimmedAnswers.some((a) => !a))
-      return toast.error("Please answer all questions");
+  const handleSave = async () => {
+    if (!validate()) return toast.error("Fix validation errors");
 
     setLoading(true);
-    const res = await verifyAnswers(email.trim(), trimmedAnswers);
+    const result = await updateSecurityAnswers(questions, answers);
     setLoading(false);
 
-    console.log("verifyAnswers response:", res); // debug
-
-    if (res.success) {
-      toast.success("Verified! Redirecting...");
-      router.push(`/reset-password?token=${res.data.token}`);
-    } else {
-      toast.error(res.message || "Incorrect answers");
-    }
-  };
-
-  // Reset answers if email changes after questions loaded
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    if (step === "questions") {
-      setStep("email");
+    if (result.success) {
+      toast.success("Security questions updated");
+      onSave(questions, answers);
       setAnswers(["", "", ""]);
-      setQuestions([]);
+      setTab("view");
+      setStep(0);
+      setIsOpen(false);
+    } else {
+      toast.error(result.message);
     }
   };
+
+  const handleNext = () => {
+    if (step < 2) setStep(step + 1);
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  const StepIndicator = () => (
+    <div className='flex justify-center gap-2 my-4'>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className={clsx(
+            "w-3 h-3 rounded-full",
+            step === i ? "bg-blue-600" : "bg-gray-300"
+          )}
+        ></div>
+      ))}
+    </div>
+  );
 
   return (
-    <div className='max-w-md mx-auto mt-20 p-6 bg-white shadow rounded-lg'>
-      <h2 className='text-xl font-semibold mb-6'>Forgot Password</h2>
+    <Modal
+      isOpen={isOpen}
+      setIsOpen={setIsOpen}
+      title='Security Questions'
+      show={isOpen}
+    >
+      <div className='flex gap-4 mb-4'>
+        <button
+          className={clsx(
+            "px-3 py-1 rounded",
+            tab === "view" ? "bg-blue-600 text-white" : "bg-gray-200"
+          )}
+          onClick={() => setTab("view")}
+        >
+          View
+        </button>
+        <button
+          className={clsx(
+            "px-3 py-1 rounded",
+            tab === "edit" ? "bg-blue-600 text-white" : "bg-gray-200"
+          )}
+          onClick={() => setTab("edit")}
+        >
+          Edit
+        </button>
+      </div>
 
-      {step === "email" ? (
-        <>
-          <InputField
-            label='Email'
-            type='email'
-            value={email}
-            onChange={handleEmailChange}
-            placeholder='Enter your email'
-            disabled={loading}
-            id='email-input'
-          />
-          <LoadingButton
-            onClick={handleEmailSubmit}
-            loading={loading}
-            disabled={loading}
-          >
-            Get Security Questions
-          </LoadingButton>
-        </>
+      {tab === "view" ? (
+        <ul className='list-disc pl-5 space-y-2 text-sm text-gray-700'>
+          {questions?.map((q, i) => (
+            <li key={i}>
+              {q?.trim() ? (
+                q
+              ) : (
+                <span className='text-gray-400 italic'>Not set</span>
+              )}
+            </li>
+          ))}
+        </ul>
       ) : (
-        <>
-          {questions.map((q, i) => (
-            <InputField
-              key={i}
-              label={q}
+        <div className='space-y-4'>
+          <StepIndicator />
+          <div>
+            <label className='block text-sm font-medium text-gray-700'>
+              Question {step + 1}
+            </label>
+            <input
               type='text'
-              value={answers[i]}
+              value={questions[step]}
+              onChange={(e) => {
+                const updated = [...questions];
+                updated[step] = e.target.value;
+                setQuestions(updated);
+                setErrors((prev) => {
+                  const updatedQ = [...prev.questions];
+                  updatedQ[step] = e.target.value.trim() ? "" : "Required";
+                  return { ...prev, questions: updatedQ };
+                });
+              }}
+              className={clsx(
+                "w-full border rounded px-3 py-2 mt-1",
+                errors.questions[step] && "border-red-500"
+              )}
+            />
+            {errors.questions[step] && (
+              <p className='text-sm text-red-500'>{errors.questions[step]}</p>
+            )}
+            <input
+              type='text'
+              placeholder='Answer'
+              value={answers[step]}
               onChange={(e) => {
                 const updated = [...answers];
-                updated[i] = e.target.value;
+                updated[step] = e.target.value;
                 setAnswers(updated);
+                setErrors((prev) => {
+                  const updatedA = [...prev.answers];
+                  updatedA[step] = e.target.value.trim() ? "" : "Required";
+                  return { ...prev, answers: updatedA };
+                });
               }}
-              placeholder='Your answer'
-              disabled={loading}
-              id={`answer-${i}`}
+              className={clsx(
+                "w-full border rounded px-3 py-2 mt-2",
+                errors.answers[step] && "border-red-500"
+              )}
             />
-          ))}
-          <LoadingButton
-            onClick={handleVerifyAnswers}
-            loading={loading}
-            disabled={loading}
-          >
-            Verify Answers
-          </LoadingButton>
-        </>
+            {errors.answers[step] && (
+              <p className='text-sm text-red-500'>{errors.answers[step]}</p>
+            )}
+          </div>
+          <div className='flex justify-between pt-2'>
+            <button
+              onClick={handleBack}
+              className='px-4 py-2 bg-gray-300 text-gray-800 rounded'
+              disabled={step === 0}
+            >
+              Back
+            </button>
+            {step < 2 ? (
+              <button
+                onClick={handleNext}
+                className='px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                className='px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'
+                disabled={loading}
+              >
+                {loading ? "Saving..." : "Save All"}
+              </button>
+            )}
+          </div>
+        </div>
       )}
-    </div>
+    </Modal>
   );
 }
