@@ -13,7 +13,7 @@ export default function SecurityModal({
   onSave,
 }: {
   isOpen: boolean;
-  setIsOpen: (val: boolean) => void;
+  setIsOpen: (open: boolean) => void;
   initialQuestions: string[];
   onSave: (questions: string[], answers: string[]) => void;
 }) {
@@ -54,6 +54,17 @@ export default function SecurityModal({
     } else {
       toast.error(result.message);
     }
+  };
+
+  const handleCancel = () => {
+    // Reset the questions and answers to their initial state
+    setQuestions(initialQuestions);
+    setAnswers(["", "", ""]);
+    setErrors({
+      questions: ["", "", ""],
+      answers: ["", "", ""],
+    });
+    setIsOpen(false); // Close the modal
   };
 
   return (
@@ -143,7 +154,13 @@ export default function SecurityModal({
               )}
             </div>
           ))}
-          <div className='flex justify-end pt-2'>
+          <div className='flex justify-end pt-2 gap-4'>
+            <button
+              onClick={handleCancel}
+              className='px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400'
+            >
+              Cancel
+            </button>
             <button
               onClick={handleSave}
               className='px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'

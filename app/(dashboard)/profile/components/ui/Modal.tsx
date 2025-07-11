@@ -19,7 +19,7 @@ export default function Modal({
       <Dialog
         as='div'
         className='relative z-50'
-        onClose={() => setIsOpen(false)}
+        onClose={() => setIsOpen(false)} // Closes the modal when clicked outside
       >
         <Transition.Child
           as={Fragment}

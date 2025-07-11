@@ -1,58 +1,131 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { resetPassword } from "../actions/forgot-password";
-import { PasswordInput } from "@/components/ui/PasswordInput";
-import { LoadingButton } from "@/components/ui/LoadingButton";
-import toast from "react-hot-toast";
-import { z } from "zod";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import SmallSpinner from "../(dashboard)/dashboard/_components/spinner";
+import { loginUser } from "../actions/login-user";
 
-const passwordSchema = z
-  .string()
-  .min(6, "Password must be at least 6 characters");
+// Import Framer Motion for animations
+import { motion } from "framer-motion";
 
-export default function ResetPasswordPage() {
+export default function LoginForm() {
   const router = useRouter();
-  const [token, setToken] = useState<string>("");
-  const [newPassword, setNewPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    setToken(urlParams.get("token") || "");
-  }, []);
-
-  const handleReset = async () => {
-    const validation = passwordSchema.safeParse(newPassword);
-    if (!validation.success) {
-      return toast.error(validation.error.errors[0].message);
-    }
-
-    setLoading(true);
-    const res = await resetPassword(token, newPassword);
-    setLoading(false);
-
-    if (res.success) {
-      toast.success("Password reset successful!");
-      setTimeout(() => router.push("/login"), 1500);
-    } else {
-      toast.error(res.message || "Failed to reset password");
-    }
+  const handleAction = (formData: FormData) => {
+    setError("");
+    startTransition(async () => {
+      try {
+        const res = await loginUser(formData);
+        if (res?.success) {
+          toast.success("Login successful!");
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 1000);
+        }
+      } catch (err: any) {
+        toast.error(err.message || "Login failed");
+      }
+    });
   };
 
   return (
-    <div className='max-w-md mx-auto mt-20 p-6 bg-white shadow rounded-lg'>
-      <h2 className='text-xl font-semibold mb-6'>Reset Password</h2>
-      <PasswordInput
-        label='New Password'
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        placeholder='Enter new password'
-      />
-      <LoadingButton onClick={handleReset} loading={loading}>
-        Set New Password
-      </LoadingButton>
-    </div>
+    <motion.div
+      className='min-h-screen flex items-center justify-center bg-gradient-to-r from-teal-500 to-purple-600'
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+    >
+      <Card className='w-full max-w-md sm:max-w-lg border border-black/10 bg-white shadow-lg rounded-lg p-6 sm:p-8'>
+        <CardHeader className='text-center'>
+          <CardTitle className='text-3xl sm:text-4xl font-bold text-gray-800'>
+            Welcome Back
+          </CardTitle>
+          <CardDescription className='text-gray-600'>
+            Sign in to your account to continue
+          </CardDescription>
+        </CardHeader>
+
+        <form action={handleAction}>
+          <CardContent className='space-y-6'>
+            {/* Email */}
+            <div className='space-y-2'>
+              <Label htmlFor='email' className='text-gray-700'>
+                Email
+              </Label>
+              <Input
+                id='email'
+                name='email'
+                type='email'
+                placeholder='you@example.com'
+                className='bg-white border-2 border-gray-300 text-gray-700 placeholder:text-gray-400 rounded-lg p-3 focus:ring-2 focus:ring-teal-500 transition-all duration-300 w-full'
+                required
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Password */}
+            <div className='space-y-2'>
+              <Label htmlFor='password' className='text-gray-700'>
+                Password
+              </Label>
+              <Input
+                id='password'
+                name='password'
+                type='password'
+                placeholder='••••••••'
+                className='bg-white border-2 border-gray-300 text-gray-700 placeholder:text-gray-400 rounded-lg p-3 focus:ring-2 focus:ring-teal-500 transition-all duration-300 w-full'
+                required
+                disabled={isPending}
+              />
+              <div className='text-right mt-2'>
+                <Link
+                  href='/forgot-password'
+                  className='text-sm text-teal-600 hover:underline'
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+
+          {/* Footer section manually implemented */}
+          <div className='flex flex-col space-y-4 p-6'>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              <Button
+                type='submit'
+                className='w-full bg-teal-600 text-white hover:bg-teal-700 focus:outline-none py-3 rounded-lg shadow-md'
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <>
+                    <SmallSpinner /> Logging in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </motion.div>
+          </div>
+        </form>
+      </Card>
+    </motion.div>
   );
 }
